@@ -42,9 +42,9 @@ func (p *Provider) SearchEmails(ctx context.Context, filter domain.EmailFilter) 
 	} else {
 		requestConfig := p.emailFilterRequestConfig(filter)
 		response, err = client.Me().Messages().Get(ctx, requestConfig)
-		if err != nil {
-			return nil, fmt.Errorf("search emails Graph API failure (cause: %w)", err)
-		}
+	}
+	if err != nil {
+		return nil, fmt.Errorf("search emails Graph API failure (cause: %w)", err)
 	}
 	emails := make([]*domain.Email, 0)
 	for _, responseItem := range response.GetValue() {
