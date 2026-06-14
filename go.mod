@@ -3,7 +3,10 @@ module github.com/tdrn-org/pim-mcp
 go 1.26.4
 
 require (
+	github.com/microsoft/kiota-abstractions-go v1.9.4
+	github.com/microsoft/kiota-authentication-azure-go v1.3.1
 	github.com/modelcontextprotocol/go-sdk v1.6.1
+	github.com/swaggo/swag v1.16.6
 	github.com/tdrn-org/go-conf v0.0.6
 )
 
@@ -28,8 +31,6 @@ require (
 	github.com/kylelemons/godebug v1.1.0 // indirect
 	github.com/mailru/easyjson v0.7.6 // indirect
 	github.com/mattn/go-isatty v0.0.22 // indirect
-	github.com/microsoft/kiota-abstractions-go v1.9.4 // indirect
-	github.com/microsoft/kiota-authentication-azure-go v1.3.1 // indirect
 	github.com/microsoft/kiota-http-go v1.5.6 // indirect
 	github.com/microsoft/kiota-serialization-form-go v1.1.3 // indirect
 	github.com/microsoft/kiota-serialization-json-go v1.1.2 // indirect
@@ -41,7 +42,6 @@ require (
 	github.com/russross/blackfriday/v2 v2.0.1 // indirect
 	github.com/shurcooL/sanitized_anchor_name v1.0.0 // indirect
 	github.com/std-uritemplate/std-uritemplate/go/v2 v2.0.3 // indirect
-	github.com/swaggo/swag v1.16.6 // indirect
 	github.com/tdrn-org/go-tlsconf v0.0.10 // indirect
 	github.com/urfave/cli/v2 v2.3.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
@@ -74,7 +74,7 @@ require (
 	github.com/tdrn-org/go-httpserver v0.1.0
 	github.com/tdrn-org/go-log v0.5.5
 	github.com/yosida95/uritemplate/v3 v3.0.2 // indirect
-	golang.org/x/oauth2 v0.35.0 // indirect
+	golang.org/x/oauth2 v0.35.0
 	golang.org/x/sys v0.44.0 // indirect
 )
 
