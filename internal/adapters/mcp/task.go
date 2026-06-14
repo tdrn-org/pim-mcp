@@ -32,13 +32,13 @@ func addTaskTools(server *mcp.Server, provider domain.TaskProvider) {
 func addSearchTasksTool(server *mcp.Server, provider domain.TaskProvider) {
 	tool := &mcp.Tool{
 		Name:        "searchTasks",
-		Description: "Searches for tasks using the given search parameters. An task summary including the task ID is returned for every found task. The task ID can be used to get the full task details (getTask).",
+		Description: "Searches for tasks using the given search parameters. A task summary including the task ID is returned for every found task. The task ID can be used to get the full task details (getTask).",
 	}
 	handler := func(ctx context.Context, req *mcp.CallToolRequest, params *SearchTasksParams) (*mcp.CallToolResult, any, error) {
 		filter := domain.TaskFilter{
 			Query: params.Query,
 			Limit: params.Limit,
-			//TODO: Status: (*domain.TaskStatus)(params.Status),
+			Status:     (*domain.TaskStatus)(params.Status),
 			DueAfter:  params.DueAfter,
 			DueBefore: params.DueBefore,
 		}
