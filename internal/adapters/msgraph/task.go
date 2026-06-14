@@ -19,7 +19,6 @@ package msgraph
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"slices"
 	"time"
 
@@ -104,38 +103,15 @@ func (p *Provider) taskFromResponse(model models.TodoTaskable) *domain.Task {
 	}
 }
 
-const taskDateTimeLayoutLong string = "2006-01-02T15:04:05.0000000"
-const taskDateTimeLayoutShort string = "2006-01-02T15:04:05"
-
-func (p *Provider) taskDateTimeFromResponse(model models.DateTimeTimeZoneable) *time.Time {
+func (p *Provider) taskDateTimeFromResponse(model models.DateTimeTimeZoneable) *domain.TZTime {
 	if model == nil {
 		return nil
 	}
-	tz := model.GetTimeZone()
-	location := time.UTC
-	if tz != nil && *tz != "" {
-		tzLocation, err := time.LoadLocation(*tz)
-		if err == nil {
-			location = tzLocation
-		} else {
-			p.logger.Info("unable to parse task time zone", slog.String("tz", *tz))
-		}
+	parsed := ParseTZtime(model.GetDateTime(), model.GetTimeZone(), p.cfg.DefaultTimeLocation.Location)
+	if parsed.Empty() {
+		return nil
 	}
-	dt := model.GetDateTime()
-	dateTime := time.Time{}
-	if dt != nil && *dt != "" {
-		layout := taskDateTimeLayoutLong
-		if len(*dt) <= len(eventDateTimeLayoutShort) {
-			layout = taskDateTimeLayoutShort
-		}
-		parsedDT, err := time.ParseInLocation(layout, *dt, location)
-		if err == nil {
-			dateTime = parsedDT
-		} else {
-			p.logger.Info("unable to parse task date-time", slog.String("dt", *dt))
-		}
-	}
-	return &dateTime
+	return &parsed
 }
 
 func (p *Provider) taskStatusFromResponse(model models.TodoTaskable) domain.TaskStatus {
@@ -169,14 +145,7 @@ func (p *Provider) taskPriorityFromResponse(model models.TodoTaskable) domain.Ta
 }
 
 func (p *Provider) taskFilterRequestConfig(filter domain.TaskFilter) *users.ItemTodoListsItemTasksRequestBuilderGetRequestConfiguration {
-	limit := int32(filter.Limit)
-	if limit <= 0 {
-		limit = int32(DefaultSearchLimit)
-	}
-	var search *string
-	if filter.Query != "" {
-		search = stringPtr(fmt.Sprintf("\"%s\"", filter.Query))
-	}
+	search, limit := standardFilterPtr(filter.StandardFilter)
 	nowUTC := time.Now().UTC()
 	var dueAfter string
 	if filter.DueAfter != nil && !filter.DueAfter.IsZero() {

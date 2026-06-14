@@ -28,8 +28,8 @@ type Task struct {
 	Description string
 	Status      TaskStatus
 	Priority    TaskPriority
-	DueAt       *time.Time
-	CompletedAt *time.Time
+	DueAt       *TZTime
+	CompletedAt *TZTime
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
 }
@@ -43,7 +43,7 @@ func (t *Task) String() string {
 	buffer.WriteString(t.Title)
 	if t.DueAt != nil {
 		buffer.WriteRune(' ')
-		buffer.WriteString(t.DueAt.Format(time.DateTime))
+		buffer.WriteString(t.DueAt.String())
 	}
 	return buffer.String()
 }
@@ -69,8 +69,7 @@ const (
 )
 
 type TaskFilter struct {
-	Query     string
-	Limit     int
+	StandardFilter
 	Status    *TaskStatus
 	DueAfter  *time.Time
 	DueBefore *time.Time

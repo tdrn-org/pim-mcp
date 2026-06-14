@@ -36,10 +36,12 @@ func addSearchEventsTool(server *mcp.Server, provider domain.CalendarProvider) {
 	}
 	handler := func(ctx context.Context, req *mcp.CallToolRequest, params *SearchEventsParams) (*mcp.CallToolResult, any, error) {
 		filter := domain.EventFilter{
-			Query: params.Query,
-			Limit: params.Limit,
-			From:  params.From,
-			To:    params.To,
+			StandardFilter: domain.StandardFilter{
+				Query: params.Query,
+				Limit: params.Limit,
+			},
+			From: params.From,
+			To:   params.To,
 		}
 		events, err := provider.SearchEvents(ctx, filter)
 		if err != nil {
@@ -66,8 +68,8 @@ func addGetEventTool(server *mcp.Server, provider domain.CalendarProvider) {
 }
 
 type SearchEventsParams struct {
-	Query string     `json:"query,omitempty" jsonschema:"Term to search for. All event attributes (Title, Description, Location, Organizer Name) are matched against this term (substring match). As soon as one attribute matches, the event is included in the result."`
-	Limit int        `json:"limit,omitempty" jsonschema:"The maximum number of events to return. If no limit is given a provider specific one applies."`
+	Query *string    `json:"query,omitempty" jsonschema:"Term to search for. All event attributes (Title, Description, Location, Organizer Name) are matched against this term (substring match). As soon as one attribute matches, the event is included in the result."`
+	Limit *int       `json:"limit,omitempty" jsonschema:"The maximum number of events to return. If no limit is given a provider specific one applies."`
 	From  *time.Time `json:"from,omitempty"  jsonschema:"Only return events scheduled at or after this time. Use RFC3339 format (e.g. 2026-06-14T00:00:00Z)."`
 	To    *time.Time `json:"to,omitempty"    jsonschema:"Only return events scheduled before this time. Use RFC3339 format (e.g. 2026-06-21T00:00:00Z)."`
 }
@@ -77,36 +79,26 @@ type GetEventParams struct {
 }
 
 type EventSummaryOutput struct {
-	ID       string          `json:"id" jsonschema:"ID of the event."`
-	Title    string          `json:"title" jsonschema:"The title of the event"`
-	Start    TimeRangeOutput `json:"start" jsonschema:"The start time of the event"`
-	End      TimeRangeOutput `json:"end" jsonschema:"The end time of the event"`
-	Location string          `json:"location" jsonschema:"The location of the event"`
-	Status   string          `json:"status" jsonschema:"The status of the event (confirmed, tentative, canceled)"`
+	ID       string       `json:"id" jsonschema:"ID of the event."`
+	Title    string       `json:"title" jsonschema:"The title of the event"`
+	Start    TZTimeOutput `json:"start" jsonschema:"The start time of the event"`
+	End      TZTimeOutput `json:"end" jsonschema:"The end time of the event"`
+	Location string       `json:"location" jsonschema:"The location of the event"`
+	Status   string       `json:"status" jsonschema:"The status of the event (confirmed, tentative, canceled)"`
 }
 
 type EventOutput struct {
-	ID          string           `json:"id" jsonschema:"ID of the event."`
-	Title       string           `json:"title" jsonschema:"The title of the event"`
-	Description string           `json:"description" jsonschema:"The description of the event"`
-	Start       TimeRangeOutput  `json:"start" jsonschema:"The start time of the event"`
-	End         TimeRangeOutput  `json:"end" jsonschema:"The end time of the event"`
-	Location    string           `json:"location" jsonschema:"The location of the event"`
-	Organizer   AttendeeOutput   `json:"organizer" jsonschema:"The organizer of the event"`
-	Attendees   []AttendeeOutput `json:"attendees" jsonschema:"The attendees of the event"`
-	IsAllDay    bool             `json:"is_all_day" jsonschema:"Whether the event is an all day event or not"`
-	Status      string           `json:"status" jsonschema:"The status of the event (confirmed, tentative, canceled)"`
-	UpdatedAt   time.Time        `json:"updated_at" jsonschema:"The last time the event was updated."`
-}
-
-type TimeRangeOutput struct {
-	DateTime time.Time `json:"date_time" jsonschema:"The date-time value of this time range."`
-	Timezone string    `json:"timezone" jsonschema:"The timezone of this time range."`
-}
-
-type AttendeeOutput struct {
-	Name  string `json:"name" jsonschema:"The display name of this attendee."`
-	Email string `json:"email" jsonschema:"The email address of this attendee."`
+	ID          string                    `json:"id" jsonschema:"ID of the event."`
+	Title       string                    `json:"title" jsonschema:"The title of the event"`
+	Description string                    `json:"description" jsonschema:"The description of the event"`
+	Start       TZTimeOutput              `json:"start" jsonschema:"The start time of the event"`
+	End         TZTimeOutput              `json:"end" jsonschema:"The end time of the event"`
+	Location    string                    `json:"location" jsonschema:"The location of the event"`
+	Organizer   NamedEmailAddressOutput   `json:"organizer" jsonschema:"The organizer of the event"`
+	Attendees   []NamedEmailAddressOutput `json:"attendees" jsonschema:"The attendees of the event"`
+	IsAllDay    bool                      `json:"is_all_day" jsonschema:"Whether the event is an all day event or not"`
+	Status      string                    `json:"status" jsonschema:"The status of the event (confirmed, tentative, canceled)"`
+	UpdatedAt   time.Time                 `json:"updated_at" jsonschema:"The last time the event was updated."`
 }
 
 func toEventSummaryOutputs(events []*domain.Event) []*EventSummaryOutput {
@@ -115,8 +107,8 @@ func toEventSummaryOutputs(events []*domain.Event) []*EventSummaryOutput {
 		output := &EventSummaryOutput{
 			ID:       event.ID,
 			Title:    event.Title,
-			Start:    toTimeRangeOutput(event.Start),
-			End:      toTimeRangeOutput(event.End),
+			Start:    toTZTimeOutput(event.Start),
+			End:      toTZTimeOutput(event.End),
 			Location: event.Location,
 			Status:   string(event.Status),
 		}
@@ -130,36 +122,14 @@ func toEventOutput(event *domain.Event) *EventOutput {
 		ID:          event.ID,
 		Title:       event.Title,
 		Description: event.Description,
-		Start:       toTimeRangeOutput(event.Start),
-		End:         toTimeRangeOutput(event.End),
+		Start:       toTZTimeOutput(event.Start),
+		End:         toTZTimeOutput(event.End),
 		Location:    event.Location,
-		Organizer:   toAttendeeOutput(event.Organizer),
-		Attendees:   toAttendeeOutputs(event.Attendees),
+		Organizer:   toNamedEmailAddressOutput(event.Organizer),
+		Attendees:   toNamedEmailAddressOutputs(event.Attendees),
 		IsAllDay:    event.IsAllDay,
 		Status:      string(event.Status),
 		UpdatedAt:   event.UpdatedAt,
 	}
 	return output
-}
-
-func toTimeRangeOutput(timeRange domain.TimeRange) TimeRangeOutput {
-	return TimeRangeOutput{
-		DateTime: timeRange.DateTime,
-		Timezone: timeRange.Timezone,
-	}
-}
-
-func toAttendeeOutput(attendee domain.Attendee) AttendeeOutput {
-	return AttendeeOutput{
-		Name:  attendee.Name,
-		Email: attendee.Email,
-	}
-}
-
-func toAttendeeOutputs(attendees []domain.Attendee) []AttendeeOutput {
-	outputs := make([]AttendeeOutput, 0, len(attendees))
-	for _, attendee := range attendees {
-		outputs = append(outputs, toAttendeeOutput(attendee))
-	}
-	return outputs
 }

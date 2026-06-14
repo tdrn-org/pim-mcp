@@ -36,8 +36,10 @@ func addSearchEmailsTool(server *mcp.Server, provider domain.EmailProvider) {
 	}
 	handler := func(ctx context.Context, req *mcp.CallToolRequest, params *SearchEmailsParams) (*mcp.CallToolResult, any, error) {
 		filter := domain.EmailFilter{
-			Query:      params.Query,
-			Limit:      params.Limit,
+			StandardFilter: domain.StandardFilter{
+				Query: params.Query,
+				Limit: params.Limit,
+			},
 			UnreadOnly: params.UnreadOnly,
 			Folder:     params.Folder,
 			Since:      params.Since,
@@ -67,8 +69,8 @@ func addGetEmailTool(server *mcp.Server, provider domain.EmailProvider) {
 }
 
 type SearchEmailsParams struct {
-	Query      string     `json:"query,omitempty"       jsonschema:"Term to search for. All email attributes (Subject, Body, From Name, From Address, To Names, To Addresses) are matched against this term (substring match). As soon as one attribute matches, the email is included in the result."`
-	Limit      int        `json:"limit,omitempty"       jsonschema:"The maximum number of emails to return. If no limit is given a provider specific one applies."`
+	Query      *string    `json:"query,omitempty"       jsonschema:"Term to search for. All email attributes (Subject, Body, From Name, From Address, To Names, To Addresses) are matched against this term (substring match). As soon as one attribute matches, the email is included in the result."`
+	Limit      *int       `json:"limit,omitempty"       jsonschema:"The maximum number of emails to return. If no limit is given a provider specific one applies."`
 	UnreadOnly bool       `json:"unread_only,omitempty" jsonschema:"If true only unread emails are returned. Defaults to false."`
 	Folder     *string    `json:"folder,omitempty"      jsonschema:"The folder to search in. Defaults to 'inbox'."`
 	Since      *time.Time `json:"since,omitempty"       jsonschema:"Only return emails received at or after this time. Use RFC3339 format (e.g. 2026-06-07T00:00:00Z). Defaults to 30 days ago."`
@@ -79,27 +81,27 @@ type GetEmailParams struct {
 }
 
 type EmailSummaryOutput struct {
-	ID         string          `json:"id" jsonschema:"ID of the email."`
-	Subject    string          `json:"subject" jsonschema:"The subject of the email"`
-	From       AddressOutput   `json:"from" jsonschema:"The sender address of the email"`
-	To         []AddressOutput `json:"tos" jsonschema:"The TO: receiver addresses of the email"`
-	CC         []AddressOutput `json:"ccs" jsonschema:"The CC: receiver addresses of the email"`
-	ReceivedAt time.Time       `json:"received_at" jsonschema:"The receive time of the email"`
-	SentAt     time.Time       `json:"sent_at" jsonschema:"The sent time of the email"`
-	IsRead     bool            `json:"is_read" jsonschema:"The read status of the email"`
+	ID         string                    `json:"id" jsonschema:"ID of the email."`
+	Subject    string                    `json:"subject" jsonschema:"The subject of the email"`
+	From       NamedEmailAddressOutput   `json:"from" jsonschema:"The sender address of the email"`
+	To         []NamedEmailAddressOutput `json:"tos" jsonschema:"The TO: receiver addresses of the email"`
+	CC         []NamedEmailAddressOutput `json:"ccs" jsonschema:"The CC: receiver addresses of the email"`
+	ReceivedAt time.Time                 `json:"received_at" jsonschema:"The receive time of the email"`
+	SentAt     time.Time                 `json:"sent_at" jsonschema:"The sent time of the email"`
+	IsRead     bool                      `json:"is_read" jsonschema:"The read status of the email"`
 }
 
 type EmailOutput struct {
-	ID         string          `json:"id" jsonschema:"ID of the email."`
-	Subject    string          `json:"subject" jsonschema:"The subject of the email"`
-	Body       string          `json:"body" jsonschema:"The body of the email"`
-	From       AddressOutput   `json:"from" jsonschema:"The sender address of the email"`
-	To         []AddressOutput `json:"tos" jsonschema:"The TO: receiver addresses of the email"`
-	CC         []AddressOutput `json:"ccs" jsonschema:"The CC: receiver addresses of the email"`
-	ReceivedAt time.Time       `json:"received_at" jsonschema:"The receive time of the email"`
-	SentAt     time.Time       `json:"sent_at" jsonschema:"The sent time of the email"`
-	IsRead     bool            `json:"is_read" jsonschema:"The read status of the email"`
-	ThreadID   string          `json:"thread_id" jsonschema:"The thread ID of the email"`
+	ID         string                    `json:"id" jsonschema:"ID of the email."`
+	Subject    string                    `json:"subject" jsonschema:"The subject of the email"`
+	Body       string                    `json:"body" jsonschema:"The body of the email"`
+	From       NamedEmailAddressOutput   `json:"from" jsonschema:"The sender address of the email"`
+	To         []NamedEmailAddressOutput `json:"tos" jsonschema:"The TO: receiver addresses of the email"`
+	CC         []NamedEmailAddressOutput `json:"ccs" jsonschema:"The CC: receiver addresses of the email"`
+	ReceivedAt time.Time                 `json:"received_at" jsonschema:"The receive time of the email"`
+	SentAt     time.Time                 `json:"sent_at" jsonschema:"The sent time of the email"`
+	IsRead     bool                      `json:"is_read" jsonschema:"The read status of the email"`
+	ThreadID   string                    `json:"thread_id" jsonschema:"The thread ID of the email"`
 }
 
 type AddressOutput struct {
@@ -113,9 +115,9 @@ func toEmailSummaryOutputs(emails []*domain.Email) []*EmailSummaryOutput {
 		output := &EmailSummaryOutput{
 			ID:         email.ID,
 			Subject:    email.Subject,
-			From:       toAddressOutput(email.From),
-			To:         toAddressOutputs(email.To),
-			CC:         toAddressOutputs(email.CC),
+			From:       toNamedEmailAddressOutput(email.From),
+			To:         toNamedEmailAddressOutputs(email.To),
+			CC:         toNamedEmailAddressOutputs(email.CC),
 			ReceivedAt: email.ReceivedAt,
 			SentAt:     email.SentAt,
 			IsRead:     email.IsRead,
@@ -130,28 +132,13 @@ func toEmailOutput(email *domain.Email) *EmailOutput {
 		ID:         email.ID,
 		Subject:    email.Subject,
 		Body:       email.Body,
-		From:       toAddressOutput(email.From),
-		To:         toAddressOutputs(email.To),
-		CC:         toAddressOutputs(email.CC),
+		From:       toNamedEmailAddressOutput(email.From),
+		To:         toNamedEmailAddressOutputs(email.To),
+		CC:         toNamedEmailAddressOutputs(email.CC),
 		ReceivedAt: email.ReceivedAt,
 		SentAt:     email.SentAt,
 		IsRead:     email.IsRead,
 		ThreadID:   email.ThreadID,
 	}
 	return output
-}
-
-func toAddressOutput(address domain.Address) AddressOutput {
-	return AddressOutput{
-		Name:    address.Name,
-		Address: address.Address,
-	}
-}
-
-func toAddressOutputs(addresses []domain.Address) []AddressOutput {
-	outputs := make([]AddressOutput, 0, len(addresses))
-	for _, address := range addresses {
-		outputs = append(outputs, toAddressOutput(address))
-	}
-	return outputs
 }

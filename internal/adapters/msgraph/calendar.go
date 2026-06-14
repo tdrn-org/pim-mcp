@@ -19,7 +19,6 @@ package msgraph
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"slices"
 	"time"
 
@@ -65,13 +64,12 @@ func (p *Provider) GetEvent(ctx context.Context, id string) (*domain.Event, erro
 }
 
 func (p *Provider) eventFromResponse(model models.Eventable) *domain.Event {
-
 	return &domain.Event{
 		ID:          ptrString(model.GetId()),
 		Title:       ptrString(model.GetSubject()),
-		Description: ptrString(model.GetBody().GetContent()),
-		Start:       p.timeRangeFromResponse(model.GetStart()),
-		End:         p.timeRangeFromResponse(model.GetEnd()),
+		Description: ptrString(model.GetBodyPreview()),
+		Start:       p.tzTimeFromResponse(model.GetStart()),
+		End:         p.tzTimeFromResponse(model.GetEnd()),
 		Location:    ptrString(model.GetLocation().GetDisplayName()),
 		Organizer:   p.attendeeFromResponse(model.GetOrganizer()),
 		Attendees:   p.attendeesFromResponse(model.GetAttendees()),
@@ -81,67 +79,33 @@ func (p *Provider) eventFromResponse(model models.Eventable) *domain.Event {
 	}
 }
 
-const eventDateTimeLayoutLong string = "2006-01-02T15:04:05.0000000"
-const eventDateTimeLayoutShort string = "2006-01-02T15:04:05"
-
-func (p *Provider) timeRangeFromResponse(model models.DateTimeTimeZoneable) domain.TimeRange {
-	tz := model.GetTimeZone()
-	location := time.UTC
-	if tz != nil && *tz != "" {
-		tzLocation, err := time.LoadLocation(*tz)
-		if err == nil {
-			location = tzLocation
-		} else {
-			p.logger.Info("unable to parse event time zone", slog.String("tz", *tz))
-		}
-	}
-	dt := model.GetDateTime()
-	dateTime := time.Time{}
-	if dt != nil && *dt != "" {
-		layout := eventDateTimeLayoutLong
-		if len(*dt) <= len(eventDateTimeLayoutShort) {
-			layout = eventDateTimeLayoutShort
-		}
-		parsedDT, err := time.ParseInLocation(layout, *dt, location)
-		if err == nil {
-			dateTime = parsedDT
-		} else {
-			p.logger.Info("unable to parse event date-time", slog.String("dt", *dt))
-		}
-	}
-	return domain.NewTimeRange(dateTime, ptrString(tz))
+func (p *Provider) tzTimeFromResponse(model models.DateTimeTimeZoneable) domain.TZTime {
+	return ParseTZtime(model.GetDateTime(), model.GetTimeZone(), p.cfg.DefaultTimeLocation.Location)
 }
 
-func (p *Provider) attendeesFromResponse(models []models.Attendeeable) []domain.Attendee {
-	attendees := make([]domain.Attendee, 0, len(models))
+func (p *Provider) attendeesFromResponse(models []models.Attendeeable) []domain.NamedEmailAddress {
+	attendees := make([]domain.NamedEmailAddress, 0, len(models))
 	for _, model := range models {
 		attendees = append(attendees, p.attendeeFromResponse(model))
 	}
 	return attendees
 }
 
-func (p *Provider) attendeeFromResponse(model models.Recipientable) domain.Attendee {
+func (p *Provider) attendeeFromResponse(model models.Recipientable) domain.NamedEmailAddress {
 	emailAddress := model.GetEmailAddress()
-	return domain.NewAttendee(ptrString(emailAddress.GetName()), ptrString(emailAddress.GetAddress()))
+	return domain.NewNamedEmailAddress(ptrString(emailAddress.GetAddress()), ptrString(emailAddress.GetName()))
 }
 
 func (p *Provider) eventStatusFromResponse(model models.Eventable) domain.EventStatus {
 	canceled := ptrBool(model.GetIsCancelled(), false)
 	if canceled {
-		return domain.StatusCanceled
+		return domain.EventStatusCanceled
 	}
-	return domain.StatusConfirmed
+	return domain.EventStatusConfirmed
 }
 
 func (p *Provider) eventFilterRequestConfig(filter domain.EventFilter) *users.ItemCalendarViewRequestBuilderGetRequestConfiguration {
-	limit := int32(filter.Limit)
-	if limit <= 0 {
-		limit = int32(DefaultSearchLimit)
-	}
-	var search *string
-	if filter.Query != "" {
-		search = stringPtr(fmt.Sprintf("\"%s\"", filter.Query))
-	}
+	search, limit := standardFilterPtr(filter.StandardFilter)
 	nowUTC := time.Now().UTC()
 	var start string
 	if filter.From != nil && !filter.From.IsZero() {
@@ -160,7 +124,7 @@ func (p *Provider) eventFilterRequestConfig(filter domain.EventFilter) *users.It
 	requestConfig := &users.ItemCalendarViewRequestBuilderGetRequestConfiguration{
 		QueryParameters: &users.ItemCalendarViewRequestBuilderGetQueryParameters{
 			Search:        search,
-			Top:           &limit,
+			Top:           limit,
 			StartDateTime: &start,
 			EndDateTime:   &end,
 			Count:         boolPtr(true),

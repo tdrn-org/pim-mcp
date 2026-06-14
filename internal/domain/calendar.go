@@ -26,11 +26,11 @@ type Event struct {
 	ID          string
 	Title       string
 	Description string
-	Start       TimeRange
-	End         TimeRange
+	Start       TZTime
+	End         TZTime
 	Location    string
-	Organizer   Attendee
-	Attendees   []Attendee
+	Organizer   NamedEmailAddress
+	Attendees   []NamedEmailAddress
 	IsAllDay    bool
 	Status      EventStatus
 	UpdatedAt   time.Time
@@ -50,36 +50,12 @@ func (e *Event) Empty() bool {
 	return e.ID == ""
 }
 
-type TimeRange struct {
-	DateTime time.Time
-	Timezone string
-}
-
-func NewTimeRange(dateTime time.Time, timezone string) TimeRange {
-	return TimeRange{
-		DateTime: dateTime,
-		Timezone: timezone,
-	}
-}
-
-type Attendee struct {
-	Name  string
-	Email string
-}
-
-func NewAttendee(name, email string) Attendee {
-	return Attendee{
-		Name:  name,
-		Email: email,
-	}
-}
-
 type EventStatus string
 
 const (
-	StatusConfirmed EventStatus = "confirmed"
-	StatusTentative EventStatus = "tentative"
-	StatusCanceled  EventStatus = "canceled"
+	EventStatusConfirmed EventStatus = "confirmed"
+	EventStatusTentative EventStatus = "tentative"
+	EventStatusCanceled  EventStatus = "canceled"
 )
 
 type CalendarProvider interface {
@@ -88,8 +64,7 @@ type CalendarProvider interface {
 }
 
 type EventFilter struct {
-	Query string
-	Limit int
-	From  *time.Time
-	To    *time.Time
+	StandardFilter
+	From *time.Time
+	To   *time.Time
 }

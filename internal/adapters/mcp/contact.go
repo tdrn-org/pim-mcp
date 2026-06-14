@@ -36,8 +36,10 @@ func addSearchContactsTool(server *mcp.Server, provider domain.ContactProvider) 
 	}
 	handler := func(ctx context.Context, req *mcp.CallToolRequest, params *SearchContactsParams) (*mcp.CallToolResult, any, error) {
 		filter := domain.ContactFilter{
-			Query: params.Query,
-			Limit: params.Limit,
+			StandardFilter: domain.StandardFilter{
+				Query: params.Query,
+				Limit: params.Limit,
+			},
 		}
 		contacts, err := provider.SearchContacts(ctx, filter)
 		if err != nil {
@@ -66,8 +68,8 @@ func addGetContactTool(server *mcp.Server, provider domain.ContactProvider) {
 }
 
 type SearchContactsParams struct {
-	Query string `json:"query,omitempty" jsonschema:"Term to search for. All contact attributes (Display Name, First Name, Last Name, Email Address, Phone Number, Address) are matched against this term (substring match). As soon as one attribute matches, the contact is included in the result. Leave empty to list all contacts."`
-	Limit int    `json:"limit,omitempty" jsonschema:"The maximum number of contacts to return. If no limit is given a provider specific one applies."`
+	Query *string `json:"query,omitempty" jsonschema:"Term to search for. All contact attributes (Display Name, First Name, Last Name, Email Address, Phone Number, Address) are matched against this term (substring match). As soon as one attribute matches, the contact is included in the result. Leave empty to list all contacts."`
+	Limit *int    `json:"limit,omitempty" jsonschema:"The maximum number of contacts to return. If no limit is given a provider specific one applies."`
 }
 
 type GetContactParams struct {
@@ -146,11 +148,11 @@ func toContactOutput(contact *domain.Contact) *ContactOutput {
 	return output
 }
 
-func toEmailAddressOutputs(emails domain.EmailAddresses) []EmailAddressOutput {
+func toEmailAddressOutputs(emails domain.ContactEmailAddresses) []EmailAddressOutput {
 	outputs := make([]EmailAddressOutput, 0, len(emails))
 	for _, email := range emails {
 		output := EmailAddressOutput{
-			Address: email.Address,
+			Address: email.Address.String(),
 			Nature:  email.Nature,
 		}
 		outputs = append(outputs, output)
@@ -158,11 +160,11 @@ func toEmailAddressOutputs(emails domain.EmailAddresses) []EmailAddressOutput {
 	return outputs
 }
 
-func toPhoneNumberOutputs(phones domain.PhoneNumbers) []PhoneNumberOutput {
+func toPhoneNumberOutputs(phones domain.ContactPhoneNumbers) []PhoneNumberOutput {
 	outputs := make([]PhoneNumberOutput, 0, len(phones))
 	for _, phone := range phones {
 		output := PhoneNumberOutput{
-			Number: phone.Number,
+			Number: phone.Number.String(),
 			Nature: phone.Nature,
 		}
 		outputs = append(outputs, output)
@@ -170,7 +172,7 @@ func toPhoneNumberOutputs(phones domain.PhoneNumbers) []PhoneNumberOutput {
 	return outputs
 }
 
-func toPostalAddressOutputs(addresses domain.PostalAddresses) []PostalAddressOutput {
+func toPostalAddressOutputs(addresses domain.ContactPostalAddresses) []PostalAddressOutput {
 	outputs := make([]PostalAddressOutput, 0, len(addresses))
 	for _, address := range addresses {
 		output := PostalAddressOutput{

@@ -36,9 +36,11 @@ func addSearchTasksTool(server *mcp.Server, provider domain.TaskProvider) {
 	}
 	handler := func(ctx context.Context, req *mcp.CallToolRequest, params *SearchTasksParams) (*mcp.CallToolResult, any, error) {
 		filter := domain.TaskFilter{
-			Query: params.Query,
-			Limit: params.Limit,
-			Status:     (*domain.TaskStatus)(params.Status),
+			StandardFilter: domain.StandardFilter{
+				Query: params.Query,
+				Limit: params.Limit,
+			},
+			Status:    (*domain.TaskStatus)(params.Status),
 			DueAfter:  params.DueAfter,
 			DueBefore: params.DueBefore,
 		}
@@ -67,8 +69,8 @@ func addGetTaskTool(server *mcp.Server, provider domain.TaskProvider) {
 }
 
 type SearchTasksParams struct {
-	Query     string     `json:"query,omitempty"      jsonschema:"Term to search for. All task attributes (Title, Description, Status) are matched against this term (substring match). As soon as one attribute matches, the task is included in the result. Leave empty to list all tasks."`
-	Limit     int        `json:"limit,omitempty"      jsonschema:"The maximum number of tasks to return. If no limit is given a provider specific one applies."`
+	Query     *string    `json:"query,omitempty"      jsonschema:"Term to search for. All task attributes (Title, Description, Status) are matched against this term (substring match). As soon as one attribute matches, the task is included in the result. Leave empty to list all tasks."`
+	Limit     *int       `json:"limit,omitempty"      jsonschema:"The maximum number of tasks to return. If no limit is given a provider specific one applies."`
 	Status    *string    `json:"status,omitempty"     jsonschema:"Only return tasks with this status. Known status values are todo, in_progress, done. Leave empty to return all tasks regardless of status."`
 	DueAfter  *time.Time `json:"due_after,omitempty"  jsonschema:"Only return tasks due at or after this time. Use RFC3339 format (e.g. 2026-06-21T00:00:00Z)."`
 	DueBefore *time.Time `json:"due_before,omitempty" jsonschema:"Only return tasks due at or before this time. Use RFC3339 format (e.g. 2026-06-14T00:00:00Z)."`
@@ -79,23 +81,23 @@ type GetTaskParams struct {
 }
 
 type TaskSummaryOutput struct {
-	ID       string     `json:"id" jsonschema:"ID of the task."`
-	Title    string     `json:"title" jsonschema:"The title of the task"`
-	Status   string     `json:"status" jsonschema:"The status of the task (todo, in_progress, done)"`
-	Priority string     `json:"priority" jsonschema:"The priority of the task (low, medium, high)"`
-	DueAt    *time.Time `json:"due_at" jsonschema:"The due date of the task"`
+	ID       string        `json:"id" jsonschema:"ID of the task."`
+	Title    string        `json:"title" jsonschema:"The title of the task"`
+	Status   string        `json:"status" jsonschema:"The status of the task (todo, in_progress, done)"`
+	Priority string        `json:"priority" jsonschema:"The priority of the task (low, medium, high)"`
+	DueAt    *TZTimeOutput `json:"due_at" jsonschema:"The due date of the task"`
 }
 
 type TaskOutput struct {
-	ID          string     `json:"id" jsonschema:"ID of the task."`
-	Title       string     `json:"title" jsonschema:"The title of the task"`
-	Description string     `json:"description" jsonschema:"The description of the task"`
-	Status      string     `json:"status" jsonschema:"The status of the task (todo, in_progress, done)"`
-	Priority    string     `json:"priority" jsonschema:"The priority of the task (low, medium, high)"`
-	DueAt       *time.Time `json:"due_at" jsonschema:"The due date of the task"`
-	CompletedAt *time.Time `json:"completed_at" jsonschema:"The date the task has been completed"`
-	CreatedAt   time.Time  `json:"created_at" jsonschema:"The date the task has been created"`
-	UpdatedAt   time.Time  `json:"updated_at" jsonschema:"The last time the task was updated."`
+	ID          string        `json:"id" jsonschema:"ID of the task."`
+	Title       string        `json:"title" jsonschema:"The title of the task"`
+	Description string        `json:"description" jsonschema:"The description of the task"`
+	Status      string        `json:"status" jsonschema:"The status of the task (todo, in_progress, done)"`
+	Priority    string        `json:"priority" jsonschema:"The priority of the task (low, medium, high)"`
+	DueAt       *TZTimeOutput `json:"due_at" jsonschema:"The due date of the task"`
+	CompletedAt *TZTimeOutput `json:"completed_at" jsonschema:"The date the task has been completed"`
+	CreatedAt   time.Time     `json:"created_at" jsonschema:"The date the task has been created"`
+	UpdatedAt   time.Time     `json:"updated_at" jsonschema:"The last time the task was updated."`
 }
 
 func toTaskSummaryOutputs(tasks []*domain.Task) []*TaskSummaryOutput {
@@ -106,7 +108,7 @@ func toTaskSummaryOutputs(tasks []*domain.Task) []*TaskSummaryOutput {
 			Title:    task.Title,
 			Status:   string(task.Status),
 			Priority: string(task.Priority),
-			DueAt:    task.DueAt,
+			DueAt:    toTZTimeOutputPtr(task.DueAt),
 		}
 		outputs = append(outputs, output)
 	}
@@ -120,8 +122,8 @@ func toTaskOutput(task *domain.Task) *TaskOutput {
 		Description: task.Description,
 		Status:      string(task.Status),
 		Priority:    string(task.Priority),
-		DueAt:       task.DueAt,
-		CompletedAt: task.CompletedAt,
+		DueAt:       toTZTimeOutputPtr(task.DueAt),
+		CompletedAt: toTZTimeOutputPtr(task.CompletedAt),
 		CreatedAt:   task.CreatedAt,
 		UpdatedAt:   task.UpdatedAt,
 	}

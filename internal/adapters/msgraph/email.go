@@ -70,7 +70,7 @@ func (p *Provider) emailFromResponse(model models.Messageable) *domain.Email {
 	return &domain.Email{
 		ID:         ptrString(model.GetId()),
 		Subject:    ptrString(model.GetSubject()),
-		Body:       ptrString(model.GetBody().GetContent()),
+		Body:       ptrString(model.GetBodyPreview()),
 		From:       p.addressFromResponse(model.GetFrom()),
 		To:         p.addressesFromResponse(model.GetToRecipients()),
 		CC:         p.addressesFromResponse(model.GetCcRecipients()),
@@ -81,28 +81,21 @@ func (p *Provider) emailFromResponse(model models.Messageable) *domain.Email {
 	}
 }
 
-func (p *Provider) addressesFromResponse(models []models.Recipientable) []domain.Address {
-	addresses := make([]domain.Address, 0, len(models))
+func (p *Provider) addressesFromResponse(models []models.Recipientable) []domain.NamedEmailAddress {
+	addresses := make([]domain.NamedEmailAddress, 0, len(models))
 	for _, model := range models {
 		addresses = append(addresses, p.addressFromResponse(model))
 	}
 	return addresses
 }
 
-func (p *Provider) addressFromResponse(model models.Recipientable) domain.Address {
+func (p *Provider) addressFromResponse(model models.Recipientable) domain.NamedEmailAddress {
 	emailAddress := model.GetEmailAddress()
-	return domain.NewAddress(ptrString(emailAddress.GetName()), ptrString(emailAddress.GetAddress()))
+	return domain.NewNamedEmailAddress(ptrString(emailAddress.GetAddress()), ptrString(emailAddress.GetName()))
 }
 
 func (p *Provider) emailFilterRequestConfig(filter domain.EmailFilter) *users.ItemMessagesRequestBuilderGetRequestConfiguration {
-	limit := int32(filter.Limit)
-	if limit <= 0 {
-		limit = int32(DefaultSearchLimit)
-	}
-	var search *string
-	if filter.Query != "" {
-		search = stringPtr(fmt.Sprintf("\"%s\"", filter.Query))
-	}
+	search, limit := standardFilterPtr(filter.StandardFilter)
 	filterParts := make([]string, 0)
 	if filter.UnreadOnly {
 		filterParts = append(filterParts, "(isRead eq false)")
@@ -121,7 +114,7 @@ func (p *Provider) emailFilterRequestConfig(filter domain.EmailFilter) *users.It
 		QueryParameters: &users.ItemMessagesRequestBuilderGetQueryParameters{
 			Search: search,
 			Filter: filterParam,
-			Top:    &limit,
+			Top:    limit,
 			Count:  boolPtr(true),
 		},
 		Headers: headers,

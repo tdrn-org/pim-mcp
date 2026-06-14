@@ -77,9 +77,9 @@ func (p *Provider) contactFromResponse(model models.Contactable) *domain.Contact
 	}
 }
 
-func (p *Provider) emailAddressesFromResponse(model models.Contactable) []domain.EmailAddress {
+func (p *Provider) emailAddressesFromResponse(model models.Contactable) []domain.ContactEmailAddress {
 	models := model.GetEmailAddresses()
-	emails := make([]domain.EmailAddress, 0, len(models))
+	emails := make([]domain.ContactEmailAddress, 0, len(models))
 	for index, model := range models {
 		nature := domain.NatureOther
 		switch index {
@@ -88,7 +88,7 @@ func (p *Provider) emailAddressesFromResponse(model models.Contactable) []domain
 		case 1:
 			nature = domain.NatureHome
 		}
-		email := domain.NewEmailAddress(ptrString(model.GetAddress()), nature)
+		email := domain.NewContactEmailAddress(ptrString(model.GetAddress()), nature)
 		if !email.Empty() {
 			emails = append(emails, email)
 		}
@@ -96,25 +96,25 @@ func (p *Provider) emailAddressesFromResponse(model models.Contactable) []domain
 	return emails
 }
 
-func (p *Provider) phoneNumbersFromResponse(model models.Contactable) []domain.PhoneNumber {
+func (p *Provider) phoneNumbersFromResponse(model models.Contactable) []domain.ContactPhoneNumber {
 	homeNumbers := model.GetHomePhones()
 	businessNumbers := model.GetBusinessPhones()
 	mobileNumber := model.GetMobilePhone()
-	phones := make([]domain.PhoneNumber, len(homeNumbers)+len(businessNumbers)+1)
+	phones := make([]domain.ContactPhoneNumber, len(homeNumbers)+len(businessNumbers)+1)
 	for _, homeNumber := range homeNumbers {
-		phone := domain.NewPhoneNumber(homeNumber, domain.NatureHome)
+		phone := domain.NewContactPhoneNumber(homeNumber, domain.NatureHome)
 		if !phone.Empty() {
 			phones = append(phones, phone)
 		}
 	}
 	for _, businessNumber := range businessNumbers {
-		phone := domain.NewPhoneNumber(businessNumber, domain.NatureBusiness)
+		phone := domain.NewContactPhoneNumber(businessNumber, domain.NatureBusiness)
 		if !phone.Empty() {
 			phones = append(phones, phone)
 		}
 	}
 	if mobileNumber != nil && *mobileNumber != "" {
-		phone := domain.NewPhoneNumber(*mobileNumber, domain.NatureMobile)
+		phone := domain.NewContactPhoneNumber(*mobileNumber, domain.NatureMobile)
 		if !phone.Empty() {
 			phones = append(phones, phone)
 		}
@@ -122,8 +122,8 @@ func (p *Provider) phoneNumbersFromResponse(model models.Contactable) []domain.P
 	return phones
 }
 
-func (p *Provider) postalAddressesFromResponse(model models.Contactable) []domain.PostalAddress {
-	addresses := make([]domain.PostalAddress, 0)
+func (p *Provider) postalAddressesFromResponse(model models.Contactable) []domain.ContactPostalAddress {
+	addresses := make([]domain.ContactPostalAddress, 0)
 	address := p.postalAddressFromResponse(model.GetBusinessAddress(), domain.NatureBusiness)
 	if !address.Empty() {
 		addresses = append(addresses, address)
@@ -139,26 +139,19 @@ func (p *Provider) postalAddressesFromResponse(model models.Contactable) []domai
 	return addresses
 }
 
-func (p *Provider) postalAddressFromResponse(model models.PhysicalAddressable, nature string) domain.PostalAddress {
-	return domain.NewPostalAddress(ptrString(model.GetStreet()), ptrString(model.GetCity()),
+func (p *Provider) postalAddressFromResponse(model models.PhysicalAddressable, nature string) domain.ContactPostalAddress {
+	return domain.NewContactPostalAddress(ptrString(model.GetStreet()), ptrString(model.GetCity()),
 		ptrString(model.GetPostalCode()), ptrString(model.GetCountryOrRegion()), nature)
 }
 
 func (p *Provider) contactFilterRequestConfig(filter domain.ContactFilter) *users.ItemContactsRequestBuilderGetRequestConfiguration {
-	limit := int32(filter.Limit)
-	if limit <= 0 {
-		limit = int32(DefaultSearchLimit)
-	}
-	var search *string
-	if filter.Query != "" {
-		search = stringPtr(fmt.Sprintf("\"%s\"", filter.Query))
-	}
+	search, limit := standardFilterPtr(filter.StandardFilter)
 	headers := &kiota.RequestHeaders{}
 	headers.Add("ConsistencyLevel", "eventual")
 	requestConfig := &users.ItemContactsRequestBuilderGetRequestConfiguration{
 		QueryParameters: &users.ItemContactsRequestBuilderGetQueryParameters{
 			Search: search,
-			Top:    &limit,
+			Top:    limit,
 			Count:  boolPtr(true),
 		},
 		Headers: headers,

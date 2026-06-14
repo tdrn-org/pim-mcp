@@ -25,3 +25,4 @@ access_log_size_limit = 0
 client_id = ""
 client_secret = ""
 tenant_id = ""
+default_time_location = "UTC"

@@ -21,7 +21,6 @@ import (
 	"log/slog"
 	"net/http"
 	"net/url"
-	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/google/uuid"
@@ -196,35 +195,4 @@ func (*Provider) Name() string {
 
 func (p *Provider) Capabilities() domain.ProviderCapabilities {
 	return domain.AllProviderCapabilities()
-}
-
-func stringPtr(s string) *string {
-	value := s
-	return &value
-}
-
-func boolPtr(b bool) *bool {
-	value := b
-	return &value
-}
-
-func ptrString(p *string) string {
-	if p == nil {
-		return ""
-	}
-	return *p
-}
-
-func ptrBool(p *bool, v bool) bool {
-	if p == nil {
-		return v
-	}
-	return *p
-}
-
-func ptrTime(p *time.Time) time.Time {
-	if p == nil {
-		return time.Time{}
-	}
-	return *p
 }

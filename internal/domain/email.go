@@ -26,9 +26,9 @@ type Email struct {
 	ID         string
 	Subject    string
 	Body       string
-	From       Address
-	To         []Address
-	CC         []Address
+	From       NamedEmailAddress
+	To         []NamedEmailAddress
+	CC         []NamedEmailAddress
 	ReceivedAt time.Time
 	SentAt     time.Time
 	IsRead     bool
@@ -40,7 +40,7 @@ func (e *Email) String() string {
 	if !e.IsRead {
 		buffer.WriteString("* ")
 	}
-	buffer.WriteString(e.From.Address)
+	buffer.WriteString(e.From.Address.String())
 	buffer.WriteRune(' ')
 	buffer.WriteString(e.Subject)
 	buffer.WriteRune(' ')
@@ -52,30 +52,13 @@ func (e *Email) Empty() bool {
 	return e.ID == ""
 }
 
-type Address struct {
-	Name    string
-	Address string
-}
-
-func NewAddress(name, address string) Address {
-	return Address{
-		Name:    name,
-		Address: address,
-	}
-}
-
-func (a *Address) Empty() bool {
-	return a.Address == ""
-}
-
 type EmailProvider interface {
 	SearchEmails(ctx context.Context, filter EmailFilter) ([]*Email, error)
 	GetEmail(ctx context.Context, id string) (*Email, error)
 }
 
 type EmailFilter struct {
-	Query      string
-	Limit      int
+	StandardFilter
 	UnreadOnly bool
 	Folder     *string
 	Since      *time.Time

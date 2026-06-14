@@ -27,11 +27,11 @@ type Contact struct {
 	DisplayName  string
 	FirstName    string
 	LastName     string
-	Emails       EmailAddresses
-	Phones       PhoneNumbers
+	Emails       ContactEmailAddresses
+	Phones       ContactPhoneNumbers
 	Organization string
 	JobTitle     string
-	Addresses    PostalAddresses
+	Addresses    ContactPostalAddresses
 	UpdatedAt    time.Time
 }
 
@@ -52,11 +52,11 @@ func (c *Contact) String() string {
 	}
 	for _, email := range c.Emails {
 		buffer.WriteRune(' ')
-		buffer.WriteString(email.Address)
+		buffer.WriteString(email.Address.String())
 	}
 	for _, phone := range c.Phones {
 		buffer.WriteRune(' ')
-		buffer.WriteString(phone.Number)
+		buffer.WriteString(phone.Number.String())
 	}
 	return buffer.String()
 }
@@ -65,83 +65,82 @@ func (c *Contact) Empty() bool {
 	return c.ID == "" || (c.DisplayName == "" && c.FirstName == "" && c.LastName == "")
 }
 
-type EmailAddress struct {
-	Address string
+type ContactEmailAddress struct {
+	Address EmailAddress
 	Nature  string
 }
 
-func NewEmailAddress(address, nature string) EmailAddress {
-	return EmailAddress{
-		Address: strings.TrimSpace(address),
+func NewContactEmailAddress(address, nature string) ContactEmailAddress {
+	return ContactEmailAddress{
+		Address: EmailAddress(strings.TrimSpace(address)),
 		Nature:  nature,
 	}
 }
 
-func (e *EmailAddress) Empty() bool {
-	return e.Address == ""
+func (e *ContactEmailAddress) Empty() bool {
+	return e.Address.Empty()
 }
 
-type EmailAddresses []EmailAddress
+type ContactEmailAddresses []ContactEmailAddress
 
-func (emails EmailAddresses) Addresses() []string {
+func (emails ContactEmailAddresses) Addresses() []string {
 	addresses := make([]string, len(emails))
 	for _, email := range emails {
-		addresses = append(addresses, email.Address)
+		addresses = append(addresses, email.Address.String())
 	}
 	return addresses
 }
 
-type PhoneNumber struct {
-	Number string
+type ContactPhoneNumber struct {
+	Number PhoneNumber
 	Nature string
 }
 
-func NewPhoneNumber(number, nature string) PhoneNumber {
-	return PhoneNumber{
-		Number: strings.TrimSpace(number),
+func NewContactPhoneNumber(number, nature string) ContactPhoneNumber {
+	return ContactPhoneNumber{
+		Number: PhoneNumber(strings.TrimSpace(number)),
 		Nature: nature,
 	}
 }
 
-func (p *PhoneNumber) Empty() bool {
-	return p.Number == ""
+func (p *ContactPhoneNumber) Empty() bool {
+	return p.Number.Empty()
 }
 
-type PhoneNumbers []PhoneNumber
+type ContactPhoneNumbers []ContactPhoneNumber
 
-func (phoneNumbers PhoneNumbers) Numbers() []string {
+func (phoneNumbers ContactPhoneNumbers) Numbers() []string {
 	numbers := make([]string, len(phoneNumbers))
 	for _, phoneNumber := range phoneNumbers {
-		numbers = append(numbers, phoneNumber.Number)
+		numbers = append(numbers, phoneNumber.Number.String())
 	}
 	return numbers
 }
 
-type PostalAddress struct {
-	Street     string
-	City       string
-	PostalCode string
-	Country    string
-	Nature     string
+type ContactPostalAddress struct {
+	PostalAddress
+	Nature string
 }
 
-func NewPostalAddress(street, city, postalCode, country, nature string) PostalAddress {
-	return PostalAddress{
-		Street:     strings.TrimSpace(street),
-		City:       strings.TrimSpace(city),
-		PostalCode: strings.TrimSpace(postalCode),
-		Country:    strings.TrimSpace(country),
-		Nature:     strings.TrimSpace(nature),
+func NewContactPostalAddress(street, city, postalCode, country, nature string) ContactPostalAddress {
+	return ContactPostalAddress{
+		PostalAddress: PostalAddress{
+			Street:     strings.TrimSpace(street),
+			City:       strings.TrimSpace(city),
+			PostalCode: strings.TrimSpace(postalCode),
+			Country:    strings.TrimSpace(country),
+		},
+		Nature: strings.TrimSpace(nature),
 	}
 }
 
-func (p *PostalAddress) Empty() bool {
-	return p.Street == "" && p.City == "" && p.PostalCode == "" && p.Country == ""
+func (p *ContactPostalAddress) Empty() bool {
+	return p.PostalAddress.Empty()
 }
 
-type PostalAddresses []PostalAddress
+type ContactPostalAddresses []ContactPostalAddress
 
-func (postalAddresses PostalAddresses) Addresses() []string {
+func (postalAddresses ContactPostalAddresses) Addresses() []string {
 	addresses := make([]string, len(postalAddresses))
 	for _, postalAddress := range postalAddresses {
 		addresses = append(addresses, postalAddress.Street+" "+postalAddress.City+" "+postalAddress.PostalCode+" "+postalAddress.Country)
@@ -155,6 +154,5 @@ type ContactProvider interface {
 }
 
 type ContactFilter struct {
-	Query string
-	Limit int
+	StandardFilter
 }

@@ -44,13 +44,13 @@ func (f EntityFilterFunc[T]) Match(t T, query string) bool {
 	return f(t, query)
 }
 
-func Match[T any](in iter.Seq[T], query string, filter EntityFilter[T]) iter.Seq[T] {
-	if len(query) == 0 {
+func Match[T any](in iter.Seq[T], query *string, filter EntityFilter[T]) iter.Seq[T] {
+	if query == nil || *query == "" {
 		return in
 	}
 	return func(yield func(T) bool) {
 		for t := range in {
-			if filter.Match(t, query) {
+			if filter.Match(t, *query) {
 				if !yield(t) {
 					return
 				}
@@ -60,11 +60,11 @@ func Match[T any](in iter.Seq[T], query string, filter EntityFilter[T]) iter.Seq
 	}
 }
 
-func Limit[T any](in iter.Seq[T], limit int) iter.Seq[T] {
-	if limit <= 0 {
+func Limit[T any](in iter.Seq[T], limit *int) iter.Seq[T] {
+	if limit == nil || *limit <= 0 {
 		return in
 	}
-	remaining := limit
+	remaining := *limit
 	return func(yield func(T) bool) {
 		if remaining <= 0 {
 			return
