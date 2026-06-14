@@ -1,0 +1,13 @@
+basePath: /api/v1
+host: localhost:9123
+info:
+  contact:
+    url: https://github.com/tdrn-org/pim-mcp
+  description: MCP server providing Agent access to PIM services.
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  title: PIM MCP Server REST API
+  version: "1.0"
+paths: {}
+swagger: "2.0"

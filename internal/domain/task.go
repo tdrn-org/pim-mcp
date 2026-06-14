@@ -1,0 +1,82 @@
+/*
+ * Copyright 2026 Holger de Carne
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package domain
+
+import (
+	"context"
+	"strings"
+	"time"
+)
+
+type Task struct {
+	ID          string
+	Title       string
+	Description string
+	Status      TaskStatus
+	Priority    TaskPriority
+	DueAt       *time.Time
+	CompletedAt *time.Time
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
+}
+
+func (t *Task) String() string {
+	buffer := &strings.Builder{}
+	buffer.WriteString(string(t.Priority))
+	buffer.WriteRune(' ')
+	buffer.WriteString(string(t.Status))
+	buffer.WriteRune(' ')
+	buffer.WriteString(t.Description)
+	if t.DueAt != nil {
+		buffer.WriteRune(' ')
+		buffer.WriteString(t.DueAt.Format(time.DateTime))
+	}
+	return buffer.String()
+}
+
+func (t *Task) Empty() bool {
+	return t.ID == ""
+}
+
+type TaskStatus string
+
+const (
+	StatusTodo       TaskStatus = "todo"
+	StatusInProgress TaskStatus = "in_progress"
+	StatusDone       TaskStatus = "done"
+)
+
+type TaskPriority string
+
+const (
+	PriorityLow    TaskPriority = "low"
+	PriorityMedium TaskPriority = "medium"
+	PriorityHigh   TaskPriority = "high"
+)
+
+type TaskFilter struct {
+	Query     string
+	Limit     int
+	Status    *TaskStatus
+	DueAfter  *time.Time
+	DueBefore *time.Time
+}
+
+type TaskProvider interface {
+	SearchTasks(ctx context.Context, filter TaskFilter) ([]*Task, error)
+	GetTask(ctx context.Context, id string) (*Task, error)
+}

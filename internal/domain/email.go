@@ -1,0 +1,82 @@
+/*
+ * Copyright 2026 Holger de Carne
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package domain
+
+import (
+	"context"
+	"strings"
+	"time"
+)
+
+type Email struct {
+	ID         string
+	Subject    string
+	Body       string
+	From       Address
+	To         []Address
+	CC         []Address
+	ReceivedAt time.Time
+	SentAt     time.Time
+	IsRead     bool
+	ThreadID   string
+}
+
+func (e *Email) String() string {
+	buffer := &strings.Builder{}
+	if !e.IsRead {
+		buffer.WriteString("* ")
+	}
+	buffer.WriteString(e.From.Address)
+	buffer.WriteRune(' ')
+	buffer.WriteString(e.Subject)
+	buffer.WriteRune(' ')
+	buffer.WriteString(e.ReceivedAt.Format(time.DateTime))
+	return buffer.String()
+}
+
+func (e *Email) Empty() bool {
+	return e.ID == ""
+}
+
+type Address struct {
+	Name    string
+	Address string
+}
+
+func NewAddress(name, address string) Address {
+	return Address{
+		Name:    name,
+		Address: address,
+	}
+}
+
+func (a *Address) Empty() bool {
+	return a.Address == ""
+}
+
+type EmailProvider interface {
+	SearchEmails(ctx context.Context, filter EmailFilter) ([]*Email, error)
+	GetEmail(ctx context.Context, id string) (*Email, error)
+}
+
+type EmailFilter struct {
+	Query      string
+	Limit      int
+	UnreadOnly bool
+	Folder     *string
+	Since      *time.Time
+}

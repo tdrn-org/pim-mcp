@@ -1,0 +1,130 @@
+/*
+ * Copyright 2026 Holger de Carne
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+package msgraph
+
+import (
+	"context"
+	"fmt"
+	"slices"
+	"strings"
+	"time"
+
+	kiota "github.com/microsoft/kiota-abstractions-go"
+	"github.com/microsoftgraph/msgraph-sdk-go/models"
+	"github.com/microsoftgraph/msgraph-sdk-go/users"
+	"github.com/tdrn-org/pim-mcp/internal/application"
+	"github.com/tdrn-org/pim-mcp/internal/domain"
+)
+
+func (p *Provider) SearchEmails(ctx context.Context, filter domain.EmailFilter) ([]*domain.Email, error) {
+	client, err := p.graphClient()
+	if err != nil {
+		return nil, err
+	}
+	requestConfig := p.emailFilterRequestConfig(filter)
+	//TODO: Routing depending on filter.Folder
+	//client.Me().MailFolders().ByMailFolderId(*filter.Folder).Messages().Get(...)
+	response, err := client.Me().Messages().Get(ctx, requestConfig)
+	if err != nil {
+		return nil, fmt.Errorf("search emails Graph API failure (cause: %w)", err)
+	}
+	emails := make([]*domain.Email, 0)
+	for _, responseItem := range response.GetValue() {
+		email := p.emailFromResponse(responseItem)
+		if !email.Empty() {
+			emails = append(emails, email)
+		}
+	}
+	slices.SortFunc(emails, application.EmailSortFunc)
+	return emails, nil
+}
+
+func (p *Provider) GetEmail(ctx context.Context, id string) (*domain.Email, error) {
+	client, err := p.graphClient()
+	if err != nil {
+		return nil, err
+	}
+	response, err := client.Me().Messages().ByMessageId(id).Get(ctx, nil)
+	if err != nil {
+		return nil, fmt.Errorf("get email Graph API failure (cause: %w)", err)
+	}
+	email := p.emailFromResponse(response)
+	return email, nil
+}
+
+func (p *Provider) emailFromResponse(model models.Messageable) *domain.Email {
+	return &domain.Email{
+		ID:         ptrString(model.GetId()),
+		Subject:    ptrString(model.GetSubject()),
+		Body:       ptrString(model.GetBody().GetContent()),
+		From:       p.addressFromResponse(model.GetFrom()),
+		To:         p.addressesFromResponse(model.GetToRecipients()),
+		CC:         p.addressesFromResponse(model.GetCcRecipients()),
+		ReceivedAt: ptrTime(model.GetReceivedDateTime()),
+		SentAt:     ptrTime(model.GetSentDateTime()),
+		IsRead:     ptrBool(model.GetIsRead(), true),
+		ThreadID:   ptrString(model.GetConversationId()),
+	}
+}
+
+func (p *Provider) addressesFromResponse(models []models.Recipientable) []domain.Address {
+	addresses := make([]domain.Address, 0, len(models))
+	for _, model := range models {
+		addresses = append(addresses, p.addressFromResponse(model))
+	}
+	return addresses
+}
+
+func (p *Provider) addressFromResponse(model models.Recipientable) domain.Address {
+	emailAddress := model.GetEmailAddress()
+	return domain.NewAddress(ptrString(emailAddress.GetName()), ptrString(emailAddress.GetAddress()))
+}
+
+func (p *Provider) emailFilterRequestConfig(filter domain.EmailFilter) *users.ItemMessagesRequestBuilderGetRequestConfiguration {
+	limit := int32(filter.Limit)
+	if limit <= 0 {
+		limit = int32(DefaultSearchLimit)
+	}
+	var search *string
+	if filter.Query != "" {
+		search = stringPtr(fmt.Sprintf("\"%s\"", filter.Query))
+	}
+	filterParts := make([]string, 0)
+	if filter.UnreadOnly {
+		filterParts = append(filterParts, "(isRead eq false)")
+	}
+	if filter.Since != nil && !filter.Since.IsZero() {
+		formattedDate := filter.Since.UTC().Format(time.RFC3339)
+		filterParts = append(filterParts, fmt.Sprintf("(receivedDateTime ge %s)", formattedDate))
+	}
+	var filterParam *string
+	if len(filterParts) > 0 {
+		filterParam = stringPtr(strings.Join(filterParts, " and "))
+	}
+	headers := &kiota.RequestHeaders{}
+	headers.Add("ConsistencyLevel", "eventual")
+	requestConfig := &users.ItemMessagesRequestBuilderGetRequestConfiguration{
+		QueryParameters: &users.ItemMessagesRequestBuilderGetQueryParameters{
+			Search: search,
+			Filter: filterParam,
+			Top:    &limit,
+			Count:  boolPtr(true),
+		},
+		Headers: headers,
+	}
+	return requestConfig
+}

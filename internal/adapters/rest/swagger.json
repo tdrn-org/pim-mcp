@@ -1,0 +1,18 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "description": "MCP server providing Agent access to PIM services.",
+        "title": "PIM MCP Server REST API",
+        "contact": {
+            "url": "https://github.com/tdrn-org/pim-mcp"
+        },
+        "license": {
+            "name": "Apache 2.0",
+            "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+        },
+        "version": "1.0"
+    },
+    "host": "localhost:9123",
+    "basePath": "/api/v1",
+    "paths": {}
+}
