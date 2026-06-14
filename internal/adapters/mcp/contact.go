@@ -95,17 +95,17 @@ type ContactOutput struct {
 	Organization string                `json:"organization" jsonschema:"The organization unit of the contact"`
 	JobTitle     string                `json:"job_title" jsonschema:"The job title of the contact"`
 	Addresses    []PostalAddressOutput `json:"addresses" jsonschema:"The postal addresses of the contact"`
-	UpdatedAt    time.Time             `json:"updated_at" jsonschema:"The last time the contact was updated."`
+	UpdatedAt    time.Time             `json:"updated_at" jsonschema:"The last time the contact was updated (RFC3339 format)."`
 }
 
 type EmailAddressOutput struct {
 	Address string `json:"address" jsonschema:"The email address."`
-	Nature  string `json:"nature" jsonschema:"The nature of the email address (private, work, ...)."`
+	Nature  string `json:"nature" jsonschema:"The nature of the email address (Home, Business, Other)."`
 }
 
 type PhoneNumberOutput struct {
 	Number string `json:"number" jsonschema:"The phone number."`
-	Nature string `json:"nature" jsonschema:"The nature of the phone number (private, work, ...)."`
+	Nature string `json:"nature" jsonschema:"The nature of the phone number (Home, Business, Mobile, Other)."`
 }
 
 type PostalAddressOutput struct {
@@ -113,7 +113,7 @@ type PostalAddressOutput struct {
 	City       string `json:"city" jsonschema:"The address' city."`
 	PostalCode string `json:"postal_code" jsonschema:"The address' postal code."`
 	Country    string `json:"country" jsonschema:"The address' country."`
-	Nature     string `json:"nature" jsonschema:"The nature of the postal address (private, work, ...)."`
+	Nature     string `json:"nature" jsonschema:"The nature of the postal address (Home, Business, Other)."`
 }
 
 func toContactSummaryOutputs(contacts []*domain.Contact) []*ContactSummaryOutput {

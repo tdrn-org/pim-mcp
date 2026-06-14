@@ -98,7 +98,7 @@ type EventOutput struct {
 	Attendees   []NamedEmailAddressOutput `json:"attendees" jsonschema:"The attendees of the event"`
 	IsAllDay    bool                      `json:"is_all_day" jsonschema:"Whether the event is an all day event or not"`
 	Status      string                    `json:"status" jsonschema:"The status of the event (confirmed, tentative, canceled)"`
-	UpdatedAt   time.Time                 `json:"updated_at" jsonschema:"The last time the event was updated."`
+	UpdatedAt   time.Time                 `json:"updated_at" jsonschema:"The last time the event was updated (RFC3339 format)."`
 }
 
 func toEventSummaryOutputs(events []*domain.Event) []*EventSummaryOutput {

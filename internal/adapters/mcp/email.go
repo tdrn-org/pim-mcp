@@ -86,8 +86,8 @@ type EmailSummaryOutput struct {
 	From       NamedEmailAddressOutput   `json:"from" jsonschema:"The sender address of the email"`
 	To         []NamedEmailAddressOutput `json:"tos" jsonschema:"The TO: receiver addresses of the email"`
 	CC         []NamedEmailAddressOutput `json:"ccs" jsonschema:"The CC: receiver addresses of the email"`
-	ReceivedAt time.Time                 `json:"received_at" jsonschema:"The receive time of the email"`
-	SentAt     time.Time                 `json:"sent_at" jsonschema:"The sent time of the email"`
+	ReceivedAt time.Time                 `json:"received_at" jsonschema:"The receive time of the email (RFC3339 format)."`
+	SentAt     time.Time                 `json:"sent_at" jsonschema:"The sent time of the email (RFC3339 format)."`
 	IsRead     bool                      `json:"is_read" jsonschema:"The read status of the email"`
 }
 
@@ -98,15 +98,10 @@ type EmailOutput struct {
 	From       NamedEmailAddressOutput   `json:"from" jsonschema:"The sender address of the email"`
 	To         []NamedEmailAddressOutput `json:"tos" jsonschema:"The TO: receiver addresses of the email"`
 	CC         []NamedEmailAddressOutput `json:"ccs" jsonschema:"The CC: receiver addresses of the email"`
-	ReceivedAt time.Time                 `json:"received_at" jsonschema:"The receive time of the email"`
-	SentAt     time.Time                 `json:"sent_at" jsonschema:"The sent time of the email"`
+	ReceivedAt time.Time                 `json:"received_at" jsonschema:"The receive time of the email (RFC3339 format)."`
+	SentAt     time.Time                 `json:"sent_at" jsonschema:"The sent time of the email (RFC3339 format)."`
 	IsRead     bool                      `json:"is_read" jsonschema:"The read status of the email"`
 	ThreadID   string                    `json:"thread_id" jsonschema:"The thread ID of the email"`
-}
-
-type AddressOutput struct {
-	Name    string `json:"name" jsonschema:"The display name of this address."`
-	Address string `json:"address" jsonschema:"The email address of this address."`
 }
 
 func toEmailSummaryOutputs(emails []*domain.Email) []*EmailSummaryOutput {

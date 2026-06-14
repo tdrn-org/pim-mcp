@@ -23,7 +23,7 @@ import (
 )
 
 type TZTimeOutput struct {
-	DateTime time.Time `json:"date_time" jsonschema:"The date-time value of this point in time."`
+	DateTime time.Time `json:"date_time" jsonschema:"The date-time value of this point in time (RFC3339 format)."`
 	Timezone string    `json:"timezone" jsonschema:"The timezone this point in time has been created in."`
 }
 
@@ -43,8 +43,8 @@ func toTZTimeOutputPtr(tzt *domain.TZTime) *TZTimeOutput {
 }
 
 type NamedEmailAddressOutput struct {
-	Address string `json:"email" jsonschema:"The email address of this entity."`
-	Name    string `json:"name" jsonschema:"The display name of this entity."`
+	Address string `json:"email" jsonschema:"The email address."`
+	Name    string `json:"name" jsonschema:"The display name associated with this email address."`
 }
 
 func toNamedEmailAddressOutput(nea domain.NamedEmailAddress) NamedEmailAddressOutput {

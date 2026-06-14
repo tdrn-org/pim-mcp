@@ -85,7 +85,7 @@ type TaskSummaryOutput struct {
 	Title    string        `json:"title" jsonschema:"The title of the task"`
 	Status   string        `json:"status" jsonschema:"The status of the task (todo, in_progress, done)"`
 	Priority string        `json:"priority" jsonschema:"The priority of the task (low, medium, high)"`
-	DueAt    *TZTimeOutput `json:"due_at" jsonschema:"The due date of the task"`
+	DueAt    *TZTimeOutput `json:"due_at" jsonschema:"The due date of the task (RFC3339 format, timezone-aware). null if no due date is set."`
 }
 
 type TaskOutput struct {
@@ -94,10 +94,10 @@ type TaskOutput struct {
 	Description string        `json:"description" jsonschema:"The description of the task"`
 	Status      string        `json:"status" jsonschema:"The status of the task (todo, in_progress, done)"`
 	Priority    string        `json:"priority" jsonschema:"The priority of the task (low, medium, high)"`
-	DueAt       *TZTimeOutput `json:"due_at" jsonschema:"The due date of the task"`
-	CompletedAt *TZTimeOutput `json:"completed_at" jsonschema:"The date the task has been completed"`
-	CreatedAt   time.Time     `json:"created_at" jsonschema:"The date the task has been created"`
-	UpdatedAt   time.Time     `json:"updated_at" jsonschema:"The last time the task was updated."`
+	DueAt       *TZTimeOutput `json:"due_at" jsonschema:"The due date of the task (RFC3339 format, timezone-aware). null if no due date is set."`
+	CompletedAt *TZTimeOutput `json:"completed_at" jsonschema:"The date the task has been completed (RFC3339 format, timezone-aware). null if not yet completed."`
+	CreatedAt   time.Time     `json:"created_at" jsonschema:"The date the task has been created (RFC3339 format)."`
+	UpdatedAt   time.Time     `json:"updated_at" jsonschema:"The last time the task was updated (RFC3339 format)."`
 }
 
 func toTaskSummaryOutputs(tasks []*domain.Task) []*TaskSummaryOutput {
