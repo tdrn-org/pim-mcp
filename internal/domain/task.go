@@ -40,7 +40,7 @@ func (t *Task) String() string {
 	buffer.WriteRune(' ')
 	buffer.WriteString(string(t.Status))
 	buffer.WriteRune(' ')
-	buffer.WriteString(t.Description)
+	buffer.WriteString(t.Title)
 	if t.DueAt != nil {
 		buffer.WriteRune(' ')
 		buffer.WriteString(t.DueAt.Format(time.DateTime))

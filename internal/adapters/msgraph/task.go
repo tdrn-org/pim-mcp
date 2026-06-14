@@ -24,21 +24,24 @@ import (
 	"time"
 
 	kiota "github.com/microsoft/kiota-abstractions-go"
+	msgraphsdk "github.com/microsoftgraph/msgraph-sdk-go"
 	"github.com/microsoftgraph/msgraph-sdk-go/models"
 	"github.com/microsoftgraph/msgraph-sdk-go/users"
 	"github.com/tdrn-org/pim-mcp/internal/application"
 	"github.com/tdrn-org/pim-mcp/internal/domain"
 )
 
-const defaultTodoTaskListID string = "default"
-
 func (p *Provider) SearchTasks(ctx context.Context, filter domain.TaskFilter) ([]*domain.Task, error) {
 	client, err := p.graphClient()
 	if err != nil {
 		return nil, err
 	}
+	listID, err := p.defaultTaskListID(ctx, client)
+	if err != nil {
+		return nil, err
+	}
 	requestConfig := p.taskFilterRequestConfig(filter)
-	response, err := client.Me().Todo().Lists().ByTodoTaskListId(defaultTodoTaskListID).Tasks().Get(ctx, requestConfig)
+	response, err := client.Me().Todo().Lists().ByTodoTaskListId(listID).Tasks().Get(ctx, requestConfig)
 	if err != nil {
 		return nil, fmt.Errorf("search tasks Graph API failure (cause: %w)", err)
 	}
@@ -58,12 +61,33 @@ func (p *Provider) GetTask(ctx context.Context, id string) (*domain.Task, error)
 	if err != nil {
 		return nil, err
 	}
-	response, err := client.Me().Todo().Lists().ByTodoTaskListId(defaultTodoTaskListID).Tasks().ByTodoTaskId(id).Get(ctx, nil)
+	listID, err := p.defaultTaskListID(ctx, client)
+	if err != nil {
+		return nil, err
+	}
+	response, err := client.Me().Todo().Lists().ByTodoTaskListId(listID).Tasks().ByTodoTaskId(id).Get(ctx, nil)
 	if err != nil {
 		return nil, fmt.Errorf("get task Graph API failure (cause: %w)", err)
 	}
 	task := p.taskFromResponse(response)
 	return task, nil
+}
+
+func (p *Provider) defaultTaskListID(ctx context.Context, client *msgraphsdk.GraphServiceClient) (string, error) {
+	response, err := client.Me().Todo().Lists().Get(ctx, nil)
+	if err != nil {
+		return "", fmt.Errorf("list task lists Graph API failure (cause: %w)", err)
+	}
+	for _, list := range response.GetValue() {
+		if list.GetWellknownListName().String() == "defaultList" {
+			id := list.GetId()
+			if id != nil && *id != "" {
+				return *id, nil
+			}
+			break
+		}
+	}
+	return "", fmt.Errorf("no default task list found")
 }
 
 func (p *Provider) taskFromResponse(model models.TodoTaskable) *domain.Task {
@@ -84,6 +108,9 @@ const taskDateTimeLayoutLong string = "2006-01-02T15:04:05.0000000"
 const taskDateTimeLayoutShort string = "2006-01-02T15:04:05"
 
 func (p *Provider) taskDateTimeFromResponse(model models.DateTimeTimeZoneable) *time.Time {
+	if model == nil {
+		return nil
+	}
 	tz := model.GetTimeZone()
 	location := time.UTC
 	if tz != nil && *tz != "" {
