@@ -35,12 +35,16 @@ func (p *Provider) SearchEmails(ctx context.Context, filter domain.EmailFilter) 
 	if err != nil {
 		return nil, err
 	}
-	requestConfig := p.emailFilterRequestConfig(filter)
-	//TODO: Routing depending on filter.Folder
-	//client.Me().MailFolders().ByMailFolderId(*filter.Folder).Messages().Get(...)
-	response, err := client.Me().Messages().Get(ctx, requestConfig)
-	if err != nil {
-		return nil, fmt.Errorf("search emails Graph API failure (cause: %w)", err)
+	var response models.MessageCollectionResponseable
+	if filter.Folder != nil && *filter.Folder != "" {
+		requestConfig := p.emailFolderFilterRequestConfig(filter)
+		response, err = client.Me().MailFolders().ByMailFolderId(*filter.Folder).Messages().Get(ctx, requestConfig)
+	} else {
+		requestConfig := p.emailFilterRequestConfig(filter)
+		response, err = client.Me().Messages().Get(ctx, requestConfig)
+		if err != nil {
+			return nil, fmt.Errorf("search emails Graph API failure (cause: %w)", err)
+		}
 	}
 	emails := make([]*domain.Email, 0)
 	for _, responseItem := range response.GetValue() {
@@ -92,6 +96,34 @@ func (p *Provider) addressesFromResponse(models []models.Recipientable) []domain
 func (p *Provider) addressFromResponse(model models.Recipientable) domain.NamedEmailAddress {
 	emailAddress := model.GetEmailAddress()
 	return domain.NewNamedEmailAddress(ptrString(emailAddress.GetAddress()), ptrString(emailAddress.GetName()))
+}
+
+func (p *Provider) emailFolderFilterRequestConfig(filter domain.EmailFilter) *users.ItemMailFoldersItemMessagesRequestBuilderGetRequestConfiguration {
+	search, limit := standardFilterPtr(filter.StandardFilter)
+	filterParts := make([]string, 0)
+	if filter.UnreadOnly {
+		filterParts = append(filterParts, "(isRead eq false)")
+	}
+	if filter.Since != nil && !filter.Since.IsZero() {
+		formattedDate := filter.Since.UTC().Format(time.RFC3339)
+		filterParts = append(filterParts, fmt.Sprintf("(receivedDateTime ge %s)", formattedDate))
+	}
+	var filterParam *string
+	if len(filterParts) > 0 {
+		filterParam = stringPtr(strings.Join(filterParts, " and "))
+	}
+	headers := &kiota.RequestHeaders{}
+	headers.Add("ConsistencyLevel", "eventual")
+	requestConfig := &users.ItemMailFoldersItemMessagesRequestBuilderGetRequestConfiguration{
+		QueryParameters: &users.ItemMailFoldersItemMessagesRequestBuilderGetQueryParameters{
+			Search: search,
+			Filter: filterParam,
+			Top:    limit,
+			Count:  boolPtr(true),
+		},
+		Headers: headers,
+	}
+	return requestConfig
 }
 
 func (p *Provider) emailFilterRequestConfig(filter domain.EmailFilter) *users.ItemMessagesRequestBuilderGetRequestConfiguration {
