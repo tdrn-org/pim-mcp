@@ -235,8 +235,11 @@ func (runtime *serverRuntime) Ping(ctx context.Context) error {
 	return runtime.server.ping(ctx)
 }
 
-func (runtime *serverRuntime) GetSession(ctx context.Context) error {
-	return nil
+func (runtime *serverRuntime) GetSession(ctx context.Context) (*rest.SessionInfo, error) {
+	return &rest.SessionInfo{
+		ProviderName: string(runtime.server.cfg.Provider.Adapter),
+		LoggedIn:     false,
+	}, nil
 }
 
 func (runtime *serverRuntime) DeleteSession(ctx context.Context) error {

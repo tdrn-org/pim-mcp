@@ -26,11 +26,15 @@ import (
 	"github.com/tdrn-org/go-httpserver"
 )
 
+type contextKey string
+
+const sessionIDKey contextKey = "session_id"
+
 type Runtime interface {
 	BaseURL() *url.URL
 	Logger() *slog.Logger
 	Ping(ctx context.Context) error
-	GetSession(ctx context.Context) error
+	GetSession(ctx context.Context) (*SessionInfo, error)
 	DeleteSession(ctx context.Context) error
 	LoginURL(ctx context.Context) (*url.URL, error)
 }
@@ -103,25 +107,37 @@ func (api *API) PingGet(w http.ResponseWriter, r *http.Request) {
 
 // GET @BasePath/session
 //
-//	@Summary		Get the user sesion
+//	@Summary		Get the user session
 //	@Description	Get the session for the current user
 //	@Produce		json
 //	@Success		200	{object}	SessionInfo
 //	@Failure		500	{string}	string	"server error"
 //	@Router			/api/v1/session [get]
 func (api *API) SessionGet(w http.ResponseWriter, r *http.Request) {
+	sessionInfo, err := api.runtime.GetSession(r.Context())
+	if err != nil {
+		api.sendError(w, r, http.StatusInternalServerError, err)
+		return
+	}
+	api.sendApplicationJSONResponse(w, r, http.StatusOK, sessionInfo)
 }
 
 // DELETE @BasePath/session
 //
-//	@Summary		Delete the user sesion
+//	@Summary		Delete the user session
 //	@Description	Delete the session for the current user
 //	@Produce		json
 //	@Success		200	{string}	string	"ok"
 //	@Failure		500	{string}	string	"server error"
-//	@Router			/api/v1/session [get]
+//	@Router			/api/v1/session [delete]
 func (api *API) SessionDelete(w http.ResponseWriter, r *http.Request) {
-
+	err := api.runtime.DeleteSession(r.Context())
+	if err != nil {
+		api.sendError(w, r, http.StatusInternalServerError, err)
+		return
+	}
+	api.sessionCookie.Clear(w)
+	api.sendPlainTextResponse(w, r, http.StatusOK, responseOK)
 }
 
 // POST @BasePath/login
