@@ -25,8 +25,8 @@ import (
 
 	"github.com/tdrn-org/go-httpserver"
 	"github.com/tdrn-org/pim-mcp/config"
+	"github.com/tdrn-org/pim-mcp/internal/adapters/demo"
 	mcpadapter "github.com/tdrn-org/pim-mcp/internal/adapters/mcp"
-	"github.com/tdrn-org/pim-mcp/internal/adapters/msgraph"
 )
 
 type Server struct {
@@ -123,8 +123,9 @@ func (s *Server) closeHttpServer() error {
 
 func (s *Server) startMCPServer(ctx context.Context, cfg *config.Config) error {
 	runtime := &serverRuntime{server: s}
-	provider := msgraph.NewProvider(runtime, &cfg.Provider.MSGraph)
-	provider.Mount(s.httpServer)
+	// provider := msgraph.NewProvider(runtime, &cfg.Provider.MSGraph)
+	// provider.Mount(s.httpServer)
+	provider := demo.NewProvider()
 	handler := mcpadapter.NewHandler(runtime, provider)
 	s.httpServer.Handle("/mcp/", handler)
 	return nil
