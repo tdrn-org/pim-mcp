@@ -34,8 +34,8 @@ type Runtime interface {
 	BaseURL() *url.URL
 	Logger() *slog.Logger
 	Ping(ctx context.Context) error
-	GetSession(ctx context.Context) (*SessionInfo, error)
-	DeleteSession(ctx context.Context) error
+	GetSession(ctx context.Context, id string) (string, *SessionInfo, error)
+	DeleteSession(ctx context.Context, id string) error
 	LoginURL(ctx context.Context) (*url.URL, error)
 }
 
@@ -114,11 +114,13 @@ func (api *API) PingGet(w http.ResponseWriter, r *http.Request) {
 //	@Failure		500	{string}	string	"server error"
 //	@Router			/api/v1/session [get]
 func (api *API) SessionGet(w http.ResponseWriter, r *http.Request) {
-	sessionInfo, err := api.runtime.GetSession(r.Context())
+	sessionId, _ := api.sessionCookie.Get(r)
+	sessionId, sessionInfo, err := api.runtime.GetSession(r.Context(), sessionId)
 	if err != nil {
 		api.sendError(w, r, http.StatusInternalServerError, err)
 		return
 	}
+	api.sessionCookie.Set(w, sessionId, false)
 	api.sendApplicationJSONResponse(w, r, http.StatusOK, sessionInfo)
 }
 
@@ -131,12 +133,15 @@ func (api *API) SessionGet(w http.ResponseWriter, r *http.Request) {
 //	@Failure		500	{string}	string	"server error"
 //	@Router			/api/v1/session [delete]
 func (api *API) SessionDelete(w http.ResponseWriter, r *http.Request) {
-	err := api.runtime.DeleteSession(r.Context())
-	if err != nil {
-		api.sendError(w, r, http.StatusInternalServerError, err)
-		return
+	sessionId, ok := api.sessionCookie.Get(r)
+	if ok {
+		err := api.runtime.DeleteSession(r.Context(), sessionId)
+		if err != nil {
+			api.sendError(w, r, http.StatusInternalServerError, err)
+			return
+		}
+		api.sessionCookie.Delete(w)
 	}
-	api.sessionCookie.Clear(w)
 	api.sendPlainTextResponse(w, r, http.StatusOK, responseOK)
 }
 

@@ -24,6 +24,7 @@ import (
 	"net/http"
 	"net/url"
 
+	"github.com/google/uuid"
 	"github.com/tdrn-org/go-database"
 	"github.com/tdrn-org/go-database/memory"
 	"github.com/tdrn-org/go-database/sqlite"
@@ -186,14 +187,14 @@ func (s *Server) closeHttpServer() error {
 }
 
 func (s *Server) startRestAPI(_ context.Context, _ *config.Config) error {
-	runtime := &serverRuntime{server: s}
+	runtime := &serverRuntime{server: s, sessionInfos: make(map[string]*rest.SessionInfo)}
 	s.api = rest.NewAPI(runtime)
 	s.api.Mount(s.httpServer)
 	return nil
 }
 
 func (s *Server) startMCPServer(ctx context.Context, cfg *config.Config) error {
-	runtime := &serverRuntime{server: s}
+	runtime := &serverRuntime{server: s, sessionInfos: make(map[string]*rest.SessionInfo)}
 	var adapter pim.Adapter
 	switch cfg.Provider.Adapter {
 	case config.ProviderAdapterDemo:
@@ -220,7 +221,8 @@ func (s *Server) ping(ctx context.Context) error {
 }
 
 type serverRuntime struct {
-	server *Server
+	server       *Server
+	sessionInfos map[string]*rest.SessionInfo
 }
 
 func (runtime *serverRuntime) BaseURL() *url.URL {
@@ -235,17 +237,25 @@ func (runtime *serverRuntime) Ping(ctx context.Context) error {
 	return runtime.server.ping(ctx)
 }
 
-func (runtime *serverRuntime) GetSession(ctx context.Context) (*rest.SessionInfo, error) {
-	return &rest.SessionInfo{
-		ProviderName: string(runtime.server.cfg.Provider.Adapter),
-		LoggedIn:     false,
-	}, nil
+func (runtime *serverRuntime) GetSession(ctx context.Context, id string) (string, *rest.SessionInfo, error) {
+	sessionId := id
+	sessionInfo, ok := runtime.sessionInfos[sessionId]
+	if !ok {
+		sessionId = uuid.NewString()
+		sessionInfo = &rest.SessionInfo{
+			ProviderName: string(runtime.server.cfg.Provider.Adapter),
+			LoggedIn:     false,
+		}
+		runtime.sessionInfos[sessionId] = sessionInfo
+	}
+	return sessionId, sessionInfo, nil
 }
 
-func (runtime *serverRuntime) DeleteSession(ctx context.Context) error {
+func (runtime *serverRuntime) DeleteSession(ctx context.Context, id string) error {
+	delete(runtime.sessionInfos, id)
 	return nil
 }
 
 func (runtime *serverRuntime) LoginURL(ctx context.Context) (*url.URL, error) {
-	return nil, nil
+	return runtime.BaseURL().JoinPath("/msgraph/login"), nil
 }

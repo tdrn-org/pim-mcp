@@ -57,11 +57,32 @@
         },
         "/api/v1/session": {
             "get": {
+                "description": "Get the session for the current user",
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Get the user session",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/rest.SessionInfo"
+                        }
+                    },
+                    "500": {
+                        "description": "server error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            },
+            "delete": {
                 "description": "Delete the session for the current user",
                 "produces": [
                     "application/json"
                 ],
-                "summary": "Delete the user sesion",
+                "summary": "Delete the user session",
                 "responses": {
                     "200": {
                         "description": "ok",
