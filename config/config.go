@@ -30,8 +30,10 @@ import (
 type Config struct {
 	Logging  LoggingConfig `toml:"logging"`
 	Server   ServerConfig  `toml:"server"`
+	Store    StoreConfig   `toml:"store"`
 	Provider struct {
-		MSGraph MSGraphConfig `toml:"msgraph"`
+		Adapter ProviderAdapter `toml:"adapter"`
+		MSGraph MSGraphConfig   `toml:"msgraph"`
 	} `toml:"provider"`
 }
 

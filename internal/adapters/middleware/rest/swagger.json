@@ -1,0 +1,95 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "description": "MCP server providing Agent access to PIM services.",
+        "title": "PIM MCP Server REST API",
+        "contact": {
+            "url": "https://github.com/tdrn-org/pim-mcp"
+        },
+        "license": {
+            "name": "Apache 2.0",
+            "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+        },
+        "version": "1.0"
+    },
+    "host": "localhost:9123",
+    "basePath": "/api/v1",
+    "paths": {
+        "/api/v1/login": {
+            "post": {
+                "description": "Initiate PIM provider login for the current user",
+                "produces": [
+                    "text/plain"
+                ],
+                "summary": "Initiate PIM provider login",
+                "responses": {
+                    "500": {
+                        "description": "server error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/ping": {
+            "get": {
+                "description": "Ping the server to check general health",
+                "produces": [
+                    "text/plain"
+                ],
+                "summary": "Ping the server",
+                "responses": {
+                    "200": {
+                        "description": "ok",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "server error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/api/v1/session": {
+            "get": {
+                "description": "Delete the session for the current user",
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Delete the user sesion",
+                "responses": {
+                    "200": {
+                        "description": "ok",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "server error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "rest.SessionInfo": {
+            "type": "object",
+            "properties": {
+                "logged_in": {
+                    "type": "boolean"
+                },
+                "provider_name": {
+                    "type": "string"
+                }
+            }
+        }
+    }
+}

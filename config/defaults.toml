@@ -21,6 +21,17 @@ allowed_origins = [ ]
 access_log = ""
 access_log_size_limit = 0
 
+[store]
+type = "memory"
+
+[store.memory]
+
+[store.sqlite]
+file = "./pim-mcp.db"
+
+[provider]
+adapter = "demo"
+
 [provider.msgraph]
 client_id = ""
 client_secret = ""

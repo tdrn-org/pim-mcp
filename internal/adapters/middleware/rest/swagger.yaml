@@ -1,0 +1,62 @@
+basePath: /api/v1
+definitions:
+  rest.SessionInfo:
+    properties:
+      logged_in:
+        type: boolean
+      provider_name:
+        type: string
+    type: object
+host: localhost:9123
+info:
+  contact:
+    url: https://github.com/tdrn-org/pim-mcp
+  description: MCP server providing Agent access to PIM services.
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  title: PIM MCP Server REST API
+  version: "1.0"
+paths:
+  /api/v1/login:
+    post:
+      description: Initiate PIM provider login for the current user
+      produces:
+      - text/plain
+      responses:
+        "500":
+          description: server error
+          schema:
+            type: string
+      summary: Initiate PIM provider login
+  /api/v1/ping:
+    get:
+      description: Ping the server to check general health
+      produces:
+      - text/plain
+      responses:
+        "200":
+          description: ok
+          schema:
+            type: string
+        "500":
+          description: server error
+          schema:
+            type: string
+      summary: Ping the server
+  /api/v1/session:
+    get:
+      description: Delete the session for the current user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ok
+          schema:
+            type: string
+        "500":
+          description: server error
+          schema:
+            type: string
+      summary: Delete the user sesion
+swagger: "2.0"

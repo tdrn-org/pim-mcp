@@ -14,11 +14,14 @@
  * limitations under the License.
  */
 
-package config
+package model
 
-type MSGraphConfig struct {
-	ClientID            string           `toml:"client_id"`
-	ClientSecret        string           `toml:"client_secret"`
-	TenantID            string           `toml:"tenant_id"`
-	DefaultTimeLocation TimeLocationSpec `toml:"default_time_location"`
-}
+import (
+	_ "embed"
+
+	"github.com/tdrn-org/go-database/sqlite"
+)
+
+//go:embed schema.sqlite.1.sql
+var schemaSQLite1Script []byte
+var SqliteSchemaScriptOption sqlite.ConfigSetter = sqlite.WithSchemaScripts(schemaSQLite1Script)

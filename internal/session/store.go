@@ -14,4 +14,30 @@
  * limitations under the License.
  */
 
-package auth
+package session
+
+import (
+	"context"
+	_ "embed"
+
+	"github.com/tdrn-org/go-database"
+)
+
+type Store struct {
+	driver *database.Driver
+}
+
+func NewStore(driver *database.Driver) *Store {
+	store := &Store{
+		driver: driver,
+	}
+	return store
+}
+
+func (s *Store) Close() error {
+	return s.driver.Close()
+}
+
+func (s *Store) Ping(ctx context.Context) error {
+	return s.driver.Ping(ctx)
+}

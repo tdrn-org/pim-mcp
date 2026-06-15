@@ -19,19 +19,31 @@ package pimmcp
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"net/url"
 
+	"github.com/tdrn-org/go-database"
+	"github.com/tdrn-org/go-database/memory"
+	"github.com/tdrn-org/go-database/sqlite"
 	"github.com/tdrn-org/go-httpserver"
+	"github.com/tdrn-org/go-tlsconf/tlsclient"
 	"github.com/tdrn-org/pim-mcp/config"
-	"github.com/tdrn-org/pim-mcp/internal/adapters/demo"
-	mcpadapter "github.com/tdrn-org/pim-mcp/internal/adapters/mcp"
+	"github.com/tdrn-org/pim-mcp/internal/adapters/middleware/mcp"
+	"github.com/tdrn-org/pim-mcp/internal/adapters/middleware/rest"
+	"github.com/tdrn-org/pim-mcp/internal/adapters/pim"
+	"github.com/tdrn-org/pim-mcp/internal/adapters/pim/demo"
+	"github.com/tdrn-org/pim-mcp/internal/adapters/pim/msgraph"
+	"github.com/tdrn-org/pim-mcp/internal/session"
+	"github.com/tdrn-org/pim-mcp/internal/session/model"
 )
 
 type Server struct {
 	cfg        *config.Config
+	store      *session.Store
 	httpServer *httpserver.Instance
+	api        *rest.API
 	baseURL    *url.URL
 	logger     *slog.Logger
 }
@@ -45,7 +57,9 @@ func StartServer(ctx context.Context, cfg *config.Config) (*Server, error) {
 		logger: earlyLogger,
 	}
 	startFuncs := []func(context.Context, *config.Config) error{
+		s.startStore,
 		s.startHttpServer,
+		s.startRestAPI,
 		s.startMCPServer,
 	}
 	for _, startFunc := range startFuncs {
@@ -81,12 +95,62 @@ func (s *Server) Shutdown(ctx context.Context) error {
 func (s *Server) Close() error {
 	closeFuncs := []func() error{
 		s.closeHttpServer,
+		s.closeStore,
 	}
 	closeErrs := make([]error, 0, len(closeFuncs))
 	for _, closeFunc := range closeFuncs {
 		closeErrs = append(closeErrs, closeFunc())
 	}
 	return errors.Join(closeErrs...)
+}
+
+func (s *Server) Ping(ctx context.Context) error {
+	if s.httpServer == nil {
+		return fmt.Errorf("server not started")
+	}
+	client := &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: tlsclient.GetConfig(),
+		},
+	}
+	pingURL := s.httpServer.BaseURL().JoinPath(rest.PathPing).String()
+	rsp, err := client.Get(pingURL)
+	if err != nil {
+		return fmt.Errorf("failed to access URL: '%s' (cause: %w)", pingURL, err)
+	}
+	if rsp.StatusCode != http.StatusOK {
+		return fmt.Errorf("failed to ping URL: '%s' (status: %s)", pingURL, rsp.Status)
+	}
+	return nil
+}
+
+func (s *Server) startStore(ctx context.Context, cfg *config.Config) error {
+	var databaseConfig database.Config
+	switch cfg.Store.DatabaseType {
+	case config.DatabaseType(memory.Type):
+		databaseConfig = memory.NewConfig(model.SqliteSchemaScriptOption)
+	case config.DatabaseType(sqlite.Type):
+		databaseConfig = sqlite.NewConfig(cfg.Store.SQLiteConfig.File, sqlite.ModeRWC, model.SqliteSchemaScriptOption)
+	default:
+		return fmt.Errorf("unrecognized store type '%s'", cfg.Store.DatabaseType)
+	}
+	driver, err := database.Open(databaseConfig)
+	if err != nil {
+		return err
+	}
+	_, _, err = driver.UpdateSchema(ctx)
+	if err != nil {
+		return errors.Join(err, driver.Close())
+	}
+	s.store = session.NewStore(driver)
+	return nil
+}
+
+func (s *Server) closeStore() error {
+	if s.store == nil {
+		return nil
+	}
+	return s.store.Close()
 }
 
 func (s *Server) startHttpServer(ctx context.Context, cfg *config.Config) error {
@@ -121,13 +185,37 @@ func (s *Server) closeHttpServer() error {
 	return s.httpServer.Close()
 }
 
+func (s *Server) startRestAPI(_ context.Context, _ *config.Config) error {
+	runtime := &serverRuntime{server: s}
+	s.api = rest.NewAPI(runtime)
+	s.api.Mount(s.httpServer)
+	return nil
+}
+
 func (s *Server) startMCPServer(ctx context.Context, cfg *config.Config) error {
 	runtime := &serverRuntime{server: s}
-	// provider := msgraph.NewProvider(runtime, &cfg.Provider.MSGraph)
-	// provider.Mount(s.httpServer)
-	provider := demo.NewProvider()
-	handler := mcpadapter.NewHandler(runtime, provider)
-	s.httpServer.Handle("/mcp/", handler)
+	var adapter pim.Adapter
+	switch cfg.Provider.Adapter {
+	case config.ProviderAdapterDemo:
+		adapter = demo.NewProvider()
+	case config.ProviderAdapterMSGraph:
+		msgraphProvider := msgraph.NewProvider(runtime, &cfg.Provider.MSGraph)
+		msgraphProvider.Mount(s.httpServer)
+		adapter = msgraphProvider
+	default:
+		return fmt.Errorf("unrecognized provider adapter '%s'", cfg.Provider.Adapter)
+	}
+	handler := mcp.NewHandler(runtime, adapter)
+	s.httpServer.Handle("/mcp", handler)
+	return nil
+}
+
+func (s *Server) ping(ctx context.Context) error {
+	err := s.store.Ping(ctx)
+	if err != nil {
+		s.logger.Warn("store ping failure", slog.Any("err", err))
+		return err
+	}
 	return nil
 }
 
@@ -141,4 +229,20 @@ func (runtime *serverRuntime) BaseURL() *url.URL {
 
 func (runtime *serverRuntime) Logger() *slog.Logger {
 	return runtime.server.logger
+}
+
+func (runtime *serverRuntime) Ping(ctx context.Context) error {
+	return runtime.server.ping(ctx)
+}
+
+func (runtime *serverRuntime) GetSession(ctx context.Context) error {
+	return nil
+}
+
+func (runtime *serverRuntime) DeleteSession(ctx context.Context) error {
+	return nil
+}
+
+func (runtime *serverRuntime) LoginURL(ctx context.Context) (*url.URL, error) {
+	return nil, nil
 }

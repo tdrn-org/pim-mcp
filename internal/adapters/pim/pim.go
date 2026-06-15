@@ -14,31 +14,10 @@
  * limitations under the License.
  */
 
-package pimmcp_test
+package pim
 
-import (
-	"testing"
+import "github.com/tdrn-org/pim-mcp/internal/domain"
 
-	"github.com/stretchr/testify/require"
-	pimmcp "github.com/tdrn-org/pim-mcp"
-	"github.com/tdrn-org/pim-mcp/config"
-)
-
-func TestStartStopServer(t *testing.T) {
-	cfg, err := config.Load("testdata/pim-mcp.toml", true)
-	require.NoError(t, err)
-	server, err := pimmcp.StartServer(t.Context(), cfg)
-	require.NoError(t, err)
-	go func() {
-		err := server.Run(t.Context())
-		require.NoError(t, err)
-	}()
-
-	err = server.Ping(t.Context())
-	require.NoError(t, err)
-
-	err = server.Shutdown(t.Context())
-	require.NoError(t, err)
-	err = server.Close()
-	require.NoError(t, err)
+type Adapter interface {
+	domain.Provider
 }
