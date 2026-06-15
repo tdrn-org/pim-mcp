@@ -44,40 +44,94 @@ func (p *Provider) GetContact(ctx context.Context, id string) (*domain.Contact, 
 }
 
 var contactData map[string]*domain.Contact = map[string]*domain.Contact{
-	"12": {
-		ID:           "12",
-		DisplayName:  "John Smith",
-		FirstName:    "John",
-		LastName:     "Smith",
-		Emails:       []domain.ContactEmailAddress{domain.NewContactEmailAddress("john.smith@nowhere.org", "private")},
-		Phones:       []domain.ContactPhoneNumber{domain.NewContactPhoneNumber("+0123456789", "private")},
-		Organization: "",
-		JobTitle:     "",
-		Addresses:    []domain.ContactPostalAddress{},
-		UpdatedAt:    time.Date(2026, 06, 8, 12, 34, 56, 0, time.UTC),
+	"c1": {
+		ID:          "c1",
+		DisplayName: "Alice Chen",
+		FirstName:   "Alice",
+		LastName:    "Chen",
+		Emails: []domain.ContactEmailAddress{
+			domain.NewContactEmailAddress("alice.chen@example.org", domain.NatureBusiness),
+			domain.NewContactEmailAddress("alice.chen.personal@example.org", domain.NatureHome),
+		},
+		Phones: []domain.ContactPhoneNumber{
+			domain.NewContactPhoneNumber("+1-555-0101", domain.NatureBusiness),
+			domain.NewContactPhoneNumber("+1-555-0201", domain.NatureMobile),
+		},
+		Organization: "Example Corp",
+		JobTitle:     "Engineering Manager",
+		Addresses: []domain.ContactPostalAddress{
+			domain.NewContactPostalAddress("123 Main Street", "San Francisco", "94105", "USA", domain.NatureBusiness),
+		},
+		UpdatedAt: time.Date(2026, 6, 8, 12, 34, 56, 0, time.UTC),
 	},
-	"34": {
-		ID:           "34",
-		DisplayName:  "Jane Miller",
-		FirstName:    "Jane",
-		LastName:     "Miller",
-		Emails:       []domain.ContactEmailAddress{domain.NewContactEmailAddress("jane.miller@nowhere.org", "private")},
-		Phones:       []domain.ContactPhoneNumber{domain.NewContactPhoneNumber("+0123456789", "private")},
-		Organization: "",
-		JobTitle:     "",
+	"c2": {
+		ID:          "c2",
+		DisplayName: "Bob Martinez",
+		FirstName:   "Bob",
+		LastName:    "Martinez",
+		Emails: []domain.ContactEmailAddress{
+			domain.NewContactEmailAddress("bob.martinez@example.org", domain.NatureBusiness),
+		},
+		Phones: []domain.ContactPhoneNumber{
+			domain.NewContactPhoneNumber("+1-555-0102", domain.NatureBusiness),
+		},
+		Organization: "Example Corp",
+		JobTitle:     "Senior Software Engineer",
 		Addresses:    []domain.ContactPostalAddress{},
-		UpdatedAt:    time.Date(2026, 06, 9, 12, 34, 56, 0, time.UTC),
+		UpdatedAt:    time.Date(2026, 6, 9, 12, 34, 56, 0, time.UTC),
 	},
-	"56": {
-		ID:           "56",
-		DisplayName:  "The Other",
-		FirstName:    "The",
-		LastName:     "Other",
-		Emails:       []domain.ContactEmailAddress{domain.NewContactEmailAddress("the.other@nowhere.org", "private")},
-		Phones:       []domain.ContactPhoneNumber{domain.NewContactPhoneNumber("+0123456789", "private")},
-		Organization: "",
-		JobTitle:     "",
+	"c3": {
+		ID:          "c3",
+		DisplayName: "Carol Wang",
+		FirstName:   "Carol",
+		LastName:    "Wang",
+		Emails: []domain.ContactEmailAddress{
+			domain.NewContactEmailAddress("carol.wang@example.org", domain.NatureBusiness),
+		},
+		Phones: []domain.ContactPhoneNumber{
+			domain.NewContactPhoneNumber("+1-555-0103", domain.NatureBusiness),
+			domain.NewContactPhoneNumber("+1-555-0203", domain.NatureHome),
+		},
+		Organization: "Example Corp",
+		JobTitle:     "Product Designer",
+		Addresses: []domain.ContactPostalAddress{
+			domain.NewContactPostalAddress("456 Oak Avenue", "New York", "10001", "USA", domain.NatureBusiness),
+		},
+		UpdatedAt: time.Date(2026, 6, 10, 12, 34, 56, 0, time.UTC),
+	},
+	"c4": {
+		ID:          "c4",
+		DisplayName: "Dave Jones",
+		FirstName:   "Dave",
+		LastName:    "Jones",
+		Emails: []domain.ContactEmailAddress{
+			domain.NewContactEmailAddress("dave.jones@example.org", domain.NatureBusiness),
+		},
+		Phones: []domain.ContactPhoneNumber{
+			domain.NewContactPhoneNumber("+1-555-0104", domain.NatureBusiness),
+		},
+		Organization: "Example Corp",
+		JobTitle:     "DevOps Lead",
 		Addresses:    []domain.ContactPostalAddress{},
-		UpdatedAt:    time.Date(2026, 06, 8, 12, 34, 56, 0, time.UTC),
+		UpdatedAt:    time.Date(2026, 6, 11, 12, 34, 56, 0, time.UTC),
+	},
+	"c5": {
+		ID:          "c5",
+		DisplayName: "Dr. Sarah Klein",
+		FirstName:   "Sarah",
+		LastName:    "Klein",
+		Emails: []domain.ContactEmailAddress{
+			domain.NewContactEmailAddress("sarah.klein@university.example.org", domain.NatureBusiness),
+			domain.NewContactEmailAddress("s.klein@personal.example.org", domain.NatureHome),
+		},
+		Phones: []domain.ContactPhoneNumber{
+			domain.NewContactPhoneNumber("+49-30-5550105", domain.NatureBusiness),
+		},
+		Organization: "Technical University of Berlin",
+		JobTitle:     "Professor of Distributed Systems",
+		Addresses: []domain.ContactPostalAddress{
+			domain.NewContactPostalAddress("Straße des 17. Juni 135", "Berlin", "10623", "Germany", domain.NatureBusiness),
+		},
+		UpdatedAt: time.Date(2026, 6, 12, 12, 34, 56, 0, time.UTC),
 	},
 }
