@@ -74,7 +74,7 @@ require (
 	github.com/tdrn-org/go-httpserver v0.1.0
 	github.com/tdrn-org/go-log v0.5.5
 	github.com/yosida95/uritemplate/v3 v3.0.2 // indirect
-	golang.org/x/oauth2 v0.35.0
+	golang.org/x/oauth2 v0.36.0
 	golang.org/x/sys v0.44.0 // indirect
 )
 
