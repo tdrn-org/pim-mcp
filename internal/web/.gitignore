@@ -27,5 +27,8 @@ test-results
 src/lib/paraglide
 project.inlang/cache/
 
+# Dependencies
+package-lock.json
+
 # Other
 README.md
