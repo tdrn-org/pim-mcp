@@ -26,10 +26,6 @@ import (
 	"github.com/tdrn-org/go-httpserver"
 )
 
-type contextKey string
-
-const sessionIDKey contextKey = "session_id"
-
 type Runtime interface {
 	BaseURL() *url.URL
 	Logger() *slog.Logger
@@ -82,7 +78,8 @@ func (api *API) Mount(server *httpserver.Instance) {
 	server.HandleFunc("GET "+PathPing, api.PingGet)
 	server.HandleFunc("GET "+PathSession, api.SessionGet)
 	server.HandleFunc("DELETE "+PathSession, api.SessionDelete)
-	server.HandleFunc("POST "+PathLogin, api.LoginPost)
+	//TODO: Make it POST
+	server.HandleFunc("GET "+PathLogin, api.LoginPost)
 }
 
 const responseOK string = "ok"
@@ -149,8 +146,11 @@ func (api *API) SessionDelete(w http.ResponseWriter, r *http.Request) {
 //
 //	@Summary		Initiate PIM provider login
 //	@Description	Initiate PIM provider login for the current user
+//	@Accept			json
 //	@Produce		text/plain
-//	@Failure		500	{string}	string	"server error"
+//	@Param			api_key	formData	string	false	"login using api_key"
+//	@Success		302		{string}	string	""
+//	@Failure		500		{string}	string	"server error"
 //	@Router			/api/v1/login [post]
 func (api *API) LoginPost(w http.ResponseWriter, r *http.Request) {
 	loginURL, err := api.runtime.LoginURL(r.Context())

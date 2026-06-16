@@ -24,16 +24,20 @@ import (
 )
 
 type Session struct {
-	driver  *database.Driver
-	ID      string
-	Secrets string
+	driver     *database.Driver
+	ID         string
+	APIKey     string
+	Secrets    string
+	LastAccess int64
 }
 
-func NewSession(driver *database.Driver, secrets string) *Session {
+func NewSession(driver *database.Driver, apiKey, secrets string) *Session {
 	return &Session{
-		driver:  driver,
-		ID:      database.NewID(),
-		Secrets: secrets,
+		driver:     driver,
+		ID:         database.NewID(),
+		APIKey:     apiKey,
+		Secrets:    secrets,
+		LastAccess: database.Now(),
 	}
 }
 
@@ -55,7 +59,7 @@ func SelectSession(ctx context.Context, driver *database.Driver, id string) (*Se
 		driver: driver,
 		ID:     id,
 	}
-	err = row.Scan(&s.Secrets)
+	err = row.Scan(&s.APIKey, &s.Secrets, &s.LastAccess)
 	if database.NoRows(err) {
 		commitErr := tx.CommitTx(txCtx)
 		if commitErr != nil {
@@ -83,7 +87,7 @@ func (s *Session) Insert(ctx context.Context) error {
 	}
 	defer tx.RollbackUncommitedTx(txCtx)
 
-	err = tx.ExecTx(txCtx, sessionInsertSQL, s.ID, s.Secrets)
+	err = tx.ExecTx(txCtx, sessionInsertSQL, s.ID, s.APIKey, s.Secrets, s.LastAccess)
 	if err != nil {
 		return err
 	}
@@ -101,7 +105,7 @@ func (s *Session) Update(ctx context.Context) error {
 	}
 	defer tx.RollbackUncommitedTx(txCtx)
 
-	err = tx.ExecTx(txCtx, sessionUpdateSQL, s.Secrets, s.ID)
+	err = tx.ExecTx(txCtx, sessionUpdateSQL, s.Secrets, s.LastAccess, s.ID)
 	if err != nil {
 		return err
 	}

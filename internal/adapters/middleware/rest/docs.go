@@ -24,11 +24,28 @@ const docTemplate = `{
         "/api/v1/login": {
             "post": {
                 "description": "Initiate PIM provider login for the current user",
+                "consumes": [
+                    "application/json"
+                ],
                 "produces": [
                     "text/plain"
                 ],
                 "summary": "Initiate PIM provider login",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "login using api_key",
+                        "name": "api_key",
+                        "in": "formData"
+                    }
+                ],
                 "responses": {
+                    "302": {
+                        "description": "Found",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
                     "500": {
                         "description": "server error",
                         "schema": {

@@ -30,7 +30,7 @@ func TestSession(t *testing.T) {
 	defer driver.Close()
 
 	// New
-	session1 := model.NewSession(driver, "old secrets")
+	session1 := model.NewSession(driver, "key1", "old secrets")
 
 	// Insert
 	err := session1.Insert(t.Context())

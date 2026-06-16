@@ -38,6 +38,7 @@ import (
 	"github.com/tdrn-org/pim-mcp/internal/adapters/pim/msgraph"
 	"github.com/tdrn-org/pim-mcp/internal/session"
 	"github.com/tdrn-org/pim-mcp/internal/session/model"
+	"github.com/tdrn-org/pim-mcp/internal/web"
 )
 
 type Server struct {
@@ -62,6 +63,7 @@ func StartServer(ctx context.Context, cfg *config.Config) (*Server, error) {
 		s.startHttpServer,
 		s.startRestAPI,
 		s.startMCPServer,
+		s.startUI,
 	}
 	for _, startFunc := range startFuncs {
 		err := startFunc(ctx, cfg)
@@ -208,6 +210,11 @@ func (s *Server) startMCPServer(ctx context.Context, cfg *config.Config) error {
 	}
 	handler := mcp.NewHandler(runtime, adapter)
 	s.httpServer.Handle("/mcp", handler)
+	return nil
+}
+
+func (s *Server) startUI(_ context.Context, _ *config.Config) error {
+	s.httpServer.Handle("/", web.Handler())
 	return nil
 }
 

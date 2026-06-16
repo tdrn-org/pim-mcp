@@ -20,10 +20,21 @@ info:
 paths:
   /api/v1/login:
     post:
+      consumes:
+      - application/json
       description: Initiate PIM provider login for the current user
+      parameters:
+      - description: login using api_key
+        in: formData
+        name: api_key
+        type: string
       produces:
       - text/plain
       responses:
+        "302":
+          description: Found
+          schema:
+            type: string
         "500":
           description: server error
           schema:

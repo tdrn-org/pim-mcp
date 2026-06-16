@@ -1,9 +1,13 @@
 INSERT INTO
     session(
         id,
-        secrets
+        api_key,
+        secrets,
+        last_access
     )
 VALUES(
     $1,
-    $2
+    $2,
+    $3,
+    $4
 )
