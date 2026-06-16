@@ -3,7 +3,7 @@ INSERT INTO
         id,
         api_key,
         api_key_shown,
-        secrets,
+        credentials,
         last_access
     )
 VALUES(

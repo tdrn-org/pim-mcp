@@ -24,7 +24,6 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/google/uuid"
 	"github.com/tdrn-org/go-database"
 	"github.com/tdrn-org/go-database/memory"
 	"github.com/tdrn-org/go-database/sqlite"
@@ -42,12 +41,14 @@ import (
 )
 
 type Server struct {
-	cfg        *config.Config
-	store      *session.Store
-	httpServer *httpserver.Instance
-	api        *rest.API
-	baseURL    *url.URL
-	logger     *slog.Logger
+	cfg           *config.Config
+	store         *session.Store
+	httpServer    *httpserver.Instance
+	sessionCookie *httpserver.CookieHandler
+	provider      pim.Provider
+	api           *rest.API
+	baseURL       *url.URL
+	logger        *slog.Logger
 }
 
 func StartServer(ctx context.Context, cfg *config.Config) (*Server, error) {
@@ -169,6 +170,11 @@ func (s *Server) startHttpServer(ctx context.Context, cfg *config.Config) error 
 	} else {
 		s.baseURL = httpServer.BaseURL()
 	}
+	s.sessionCookie = &httpserver.CookieHandler{
+		Name:   "pim-mcp-session",
+		Path:   "/",
+		Secure: s.baseURL.Scheme == "https",
+	}
 	// Replace early logger by one attributed with actual URL
 	s.logger = slog.With(slog.String("baseURL", s.baseURL.String()))
 	return nil
@@ -189,26 +195,24 @@ func (s *Server) closeHttpServer() error {
 }
 
 func (s *Server) startRestAPI(_ context.Context, _ *config.Config) error {
-	runtime := &serverRuntime{server: s, sessionInfos: make(map[string]*rest.SessionInfo)}
+	runtime := &serverRuntime{server: s}
 	s.api = rest.NewAPI(runtime)
 	s.api.Mount(s.httpServer)
 	return nil
 }
 
 func (s *Server) startMCPServer(ctx context.Context, cfg *config.Config) error {
-	runtime := &serverRuntime{server: s, sessionInfos: make(map[string]*rest.SessionInfo)}
-	var adapter pim.Adapter
+	runtime := &serverRuntime{server: s}
 	switch cfg.Provider.Adapter {
 	case config.ProviderAdapterDemo:
-		adapter = demo.NewProvider()
+		s.provider = demo.NewProvider()
 	case config.ProviderAdapterMSGraph:
-		msgraphProvider := msgraph.NewProvider(runtime, &cfg.Provider.MSGraph)
-		msgraphProvider.Mount(s.httpServer)
-		adapter = msgraphProvider
+		s.provider = msgraph.NewProvider(runtime, &cfg.Provider.MSGraph)
 	default:
 		return fmt.Errorf("unrecognized provider adapter '%s'", cfg.Provider.Adapter)
 	}
-	handler := mcp.NewHandler(runtime, adapter)
+	s.provider.Mount(s.httpServer)
+	handler := mcp.NewHandler(runtime, s.provider)
 	s.httpServer.Handle("/mcp", handler)
 	return nil
 }
@@ -218,18 +222,12 @@ func (s *Server) startUI(_ context.Context, _ *config.Config) error {
 	return nil
 }
 
-func (s *Server) ping(ctx context.Context) error {
-	err := s.store.Ping(ctx)
-	if err != nil {
-		s.logger.Warn("store ping failure", slog.Any("err", err))
-		return err
-	}
-	return nil
+type serverRuntime struct {
+	server *Server
 }
 
-type serverRuntime struct {
-	server       *Server
-	sessionInfos map[string]*rest.SessionInfo
+func (runtime *serverRuntime) Provider() pim.Provider {
+	return runtime.server.provider
 }
 
 func (runtime *serverRuntime) BaseURL() *url.URL {
@@ -241,25 +239,32 @@ func (runtime *serverRuntime) Logger() *slog.Logger {
 }
 
 func (runtime *serverRuntime) Ping(ctx context.Context) error {
-	return runtime.server.ping(ctx)
+	err := runtime.server.store.Ping(ctx)
+	if err != nil {
+		runtime.server.logger.Warn("store ping failure", slog.Any("err", err))
+		return err
+	}
+	return nil
 }
 
-func (runtime *serverRuntime) GetSession(ctx context.Context, id string) (string, *rest.SessionInfo, error) {
-	sessionId := id
-	sessionInfo, ok := runtime.sessionInfos[sessionId]
-	if !ok {
-		sessionId = uuid.NewString()
-		sessionInfo = &rest.SessionInfo{
-			ProviderName: string(runtime.server.cfg.Provider.Adapter),
-			LoggedIn:     false,
-		}
-		runtime.sessionInfos[sessionId] = sessionInfo
-	}
-	return sessionId, sessionInfo, nil
+func (runtime *serverRuntime) SessionCookie() *httpserver.CookieHandler {
+	return runtime.server.sessionCookie
+}
+
+func (runtime *serverRuntime) GetSession(ctx context.Context, id string) (*model.Session, error) {
+	return runtime.server.store.GetSession(ctx, id)
+}
+
+func (runtime *serverRuntime) UpdateSessionCredentials(ctx context.Context, id string, credentials string) error {
+	return runtime.server.store.UpdateSessionCredentials(ctx, id, credentials)
+}
+
+func (runtime *serverRuntime) LookupSessionByAPIKey(ctx context.Context, apiKey string) (*model.Session, error) {
+	return runtime.server.store.LookupSessionByAPIKey(ctx, apiKey)
 }
 
 func (runtime *serverRuntime) DeleteSession(ctx context.Context, id string) error {
-	delete(runtime.sessionInfos, id)
+	// TODO: Implement
 	return nil
 }
 

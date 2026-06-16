@@ -30,7 +30,7 @@ func TestSession(t *testing.T) {
 	defer driver.Close()
 
 	// New
-	session1 := model.NewSession(driver, "key1", "old secrets")
+	session1 := model.NewSession(driver)
 
 	// Insert
 	err := session1.Insert(t.Context())
@@ -47,7 +47,7 @@ func TestSession(t *testing.T) {
 	require.Equal(t, session1, session3)
 
 	// Update
-	session2.Secrets = "new secrets"
+	session2.Credentials = "new credentials"
 	err = session2.Update(t.Context())
 	require.NoError(t, err)
 }

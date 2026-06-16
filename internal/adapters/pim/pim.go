@@ -16,8 +16,21 @@
 
 package pim
 
-import "github.com/tdrn-org/pim-mcp/internal/domain"
+import (
+	"time"
 
-type Adapter interface {
+	"github.com/tdrn-org/go-httpserver"
+	"github.com/tdrn-org/pim-mcp/internal/domain"
+)
+
+type Provider interface {
 	domain.Provider
+	Mount(server *httpserver.Instance)
+	CheckCredentials(credentials string) (*CredentialInfo, error)
+	RefreshCredentials(credentials string) (string, error)
+}
+
+type CredentialInfo struct {
+	Valid  bool
+	Expiry time.Time
 }

@@ -1,9 +1,18 @@
 basePath: /api/v1
 definitions:
+  rest.CredentialInfo:
+    properties:
+      expiry:
+        type: string
+      valid:
+        type: boolean
+    type: object
   rest.SessionInfo:
     properties:
-      logged_in:
-        type: boolean
+      api_key:
+        type: string
+      credentials:
+        $ref: '#/definitions/rest.CredentialInfo'
       provider_name:
         type: string
     type: object

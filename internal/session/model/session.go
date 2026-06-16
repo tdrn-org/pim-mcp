@@ -18,7 +18,9 @@ package model
 
 import (
 	"context"
+	"crypto/rand"
 	_ "embed"
+	"encoding/base64"
 
 	"github.com/tdrn-org/go-database"
 )
@@ -28,17 +30,23 @@ type Session struct {
 	ID          string
 	APIKey      string
 	APIKeyShown bool
-	Secrets     string
+	Credentials string
 	LastAccess  int64
 }
 
-func NewSession(driver *database.Driver, apiKey, secrets string) *Session {
+const sessionAPIKeyLenght int = 64
+const sessionAPIKeyPrefix string = "pim_mcp_"
+
+func NewSession(driver *database.Driver) *Session {
+	apiKeyBytes := make([]byte, sessionAPIKeyLenght)
+	rand.Read(apiKeyBytes)
+	apiKey := sessionAPIKeyPrefix + base64.RawURLEncoding.EncodeToString(apiKeyBytes)
 	return &Session{
 		driver:      driver,
 		ID:          database.NewID(),
 		APIKey:      apiKey,
 		APIKeyShown: false,
-		Secrets:     secrets,
+		Credentials: "",
 		LastAccess:  database.Now(),
 	}
 }
@@ -61,14 +69,11 @@ func SelectSession(ctx context.Context, driver *database.Driver, id string) (*Se
 		driver: driver,
 		ID:     id,
 	}
-	err = row.Scan(&s.APIKey, &s.APIKeyShown, &s.Secrets, &s.LastAccess)
+	err = row.Scan(&s.APIKey, &s.APIKeyShown, &s.Credentials, &s.LastAccess)
 	if database.NoRows(err) {
-		commitErr := tx.CommitTx(txCtx)
-		if commitErr != nil {
-			err = commitErr
-		}
-	}
-	if err != nil {
+		s = nil
+		err = nil
+	} else if err != nil {
 		return nil, err
 	}
 
@@ -97,14 +102,11 @@ func SelectSessionByAPIKey(ctx context.Context, driver *database.Driver, apiKey 
 		driver: driver,
 		APIKey: apiKey,
 	}
-	err = row.Scan(&s.ID, &s.APIKeyShown, &s.Secrets, &s.LastAccess)
+	err = row.Scan(&s.ID, &s.APIKeyShown, &s.Credentials, &s.LastAccess)
 	if database.NoRows(err) {
-		commitErr := tx.CommitTx(txCtx)
-		if commitErr != nil {
-			err = commitErr
-		}
-	}
-	if err != nil {
+		s = nil
+		err = nil
+	} else if err != nil {
 		return nil, err
 	}
 
@@ -125,7 +127,7 @@ func (s *Session) Insert(ctx context.Context) error {
 	}
 	defer tx.RollbackUncommitedTx(txCtx)
 
-	err = tx.ExecTx(txCtx, sessionInsertSQL, s.ID, s.APIKey, s.APIKeyShown, s.Secrets, s.LastAccess)
+	err = tx.ExecTx(txCtx, sessionInsertSQL, s.ID, s.APIKey, s.APIKeyShown, s.Credentials, s.LastAccess)
 	if err != nil {
 		return err
 	}
@@ -143,7 +145,7 @@ func (s *Session) Update(ctx context.Context) error {
 	}
 	defer tx.RollbackUncommitedTx(txCtx)
 
-	err = tx.ExecTx(txCtx, sessionUpdateSQL, s.APIKeyShown, s.Secrets, s.LastAccess, s.ID)
+	err = tx.ExecTx(txCtx, sessionUpdateSQL, s.APIKeyShown, s.Credentials, s.LastAccess, s.ID)
 	if err != nil {
 		return err
 	}

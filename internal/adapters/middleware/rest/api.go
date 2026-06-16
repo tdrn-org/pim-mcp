@@ -22,22 +22,34 @@ import (
 	"log/slog"
 	"net/http"
 	"net/url"
+	"time"
 
 	"github.com/tdrn-org/go-httpserver"
+	"github.com/tdrn-org/pim-mcp/internal/adapters/pim"
+	"github.com/tdrn-org/pim-mcp/internal/session/model"
 )
 
 type Runtime interface {
+	Provider() pim.Provider
 	BaseURL() *url.URL
 	Logger() *slog.Logger
 	Ping(ctx context.Context) error
-	GetSession(ctx context.Context, id string) (string, *SessionInfo, error)
+	SessionCookie() *httpserver.CookieHandler
+	GetSession(ctx context.Context, id string) (*model.Session, error)
+	LookupSessionByAPIKey(ctx context.Context, apiKey string) (*model.Session, error)
 	DeleteSession(ctx context.Context, id string) error
 	LoginURL(ctx context.Context) (*url.URL, error)
 }
 
 type SessionInfo struct {
-	ProviderName string `json:"provider_name"`
-	LoggedIn     bool   `json:"logged_in"`
+	ProviderName string         `json:"provider_name"`
+	APIKey       string         `json:"api_key"`
+	Credentials  CredentialInfo `json:"credentials"`
+}
+
+type CredentialInfo struct {
+	Valid  bool      `json:"valid"`
+	Expiry time.Time `json:"expiry"`
 }
 
 //	@title			PIM MCP Server REST API
@@ -53,19 +65,12 @@ type SessionInfo struct {
 //	@BasePath	/api/v1
 
 type API struct {
-	runtime       Runtime
-	sessionCookie *httpserver.CookieHandler
+	runtime Runtime
 }
 
 func NewAPI(runtime Runtime) *API {
-	sessionCookie := &httpserver.CookieHandler{
-		Name:   "pim-mcp-session",
-		Path:   "/",
-		Secure: runtime.BaseURL().Scheme == "https",
-	}
 	return &API{
-		runtime:       runtime,
-		sessionCookie: sessionCookie,
+		runtime: runtime,
 	}
 }
 
@@ -111,13 +116,31 @@ func (api *API) PingGet(w http.ResponseWriter, r *http.Request) {
 //	@Failure		500	{string}	string	"server error"
 //	@Router			/api/v1/session [get]
 func (api *API) SessionGet(w http.ResponseWriter, r *http.Request) {
-	sessionId, _ := api.sessionCookie.Get(r)
-	sessionId, sessionInfo, err := api.runtime.GetSession(r.Context(), sessionId)
+	id, _ := api.runtime.SessionCookie().Get(r)
+	session, err := api.runtime.GetSession(r.Context(), id)
 	if err != nil {
 		api.sendError(w, r, http.StatusInternalServerError, err)
 		return
 	}
-	api.sessionCookie.Set(w, sessionId, false)
+	apiKey := ""
+	if !session.APIKeyShown {
+		apiKey = session.APIKey
+	}
+	provider := api.runtime.Provider()
+	credenitalInfo, err := provider.CheckCredentials(session.Credentials)
+	if err != nil {
+		api.sendError(w, r, http.StatusInternalServerError, err)
+		return
+	}
+	sessionInfo := &SessionInfo{
+		ProviderName: api.runtime.Provider().Name(),
+		APIKey:       apiKey,
+		Credentials: CredentialInfo{
+			Valid:  credenitalInfo.Valid,
+			Expiry: credenitalInfo.Expiry,
+		},
+	}
+	api.runtime.SessionCookie().Set(w, session.ID, false)
 	api.sendApplicationJSONResponse(w, r, http.StatusOK, sessionInfo)
 }
 
@@ -130,14 +153,15 @@ func (api *API) SessionGet(w http.ResponseWriter, r *http.Request) {
 //	@Failure		500	{string}	string	"server error"
 //	@Router			/api/v1/session [delete]
 func (api *API) SessionDelete(w http.ResponseWriter, r *http.Request) {
-	sessionId, ok := api.sessionCookie.Get(r)
+	sessionCookie := api.runtime.SessionCookie()
+	id, ok := sessionCookie.Get(r)
 	if ok {
-		err := api.runtime.DeleteSession(r.Context(), sessionId)
+		sessionCookie.Delete(w)
+		err := api.runtime.DeleteSession(r.Context(), id)
 		if err != nil {
 			api.sendError(w, r, http.StatusInternalServerError, err)
 			return
 		}
-		api.sessionCookie.Delete(w)
 	}
 	api.sendPlainTextResponse(w, r, http.StatusOK, responseOK)
 }

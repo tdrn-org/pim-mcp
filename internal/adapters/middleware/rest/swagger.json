@@ -120,11 +120,25 @@
         }
     },
     "definitions": {
+        "rest.CredentialInfo": {
+            "type": "object",
+            "properties": {
+                "expiry": {
+                    "type": "string"
+                },
+                "valid": {
+                    "type": "boolean"
+                }
+            }
+        },
         "rest.SessionInfo": {
             "type": "object",
             "properties": {
-                "logged_in": {
-                    "type": "boolean"
+                "api_key": {
+                    "type": "string"
+                },
+                "credentials": {
+                    "$ref": "#/definitions/rest.CredentialInfo"
                 },
                 "provider_name": {
                     "type": "string"

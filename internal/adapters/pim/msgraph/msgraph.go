@@ -17,10 +17,13 @@
 package msgraph
 
 import (
+	"context"
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"net/http"
 	"net/url"
+	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/google/uuid"
@@ -28,7 +31,9 @@ import (
 	msgraphsdk "github.com/microsoftgraph/msgraph-sdk-go"
 	"github.com/tdrn-org/go-httpserver"
 	"github.com/tdrn-org/pim-mcp/config"
+	"github.com/tdrn-org/pim-mcp/internal/adapters/pim"
 	"github.com/tdrn-org/pim-mcp/internal/domain"
+	"github.com/tdrn-org/pim-mcp/internal/session/model"
 	"golang.org/x/oauth2"
 )
 
@@ -39,6 +44,27 @@ const DefaultSearchLimit int = 25
 type Runtime interface {
 	BaseURL() *url.URL
 	Logger() *slog.Logger
+	SessionCookie() *httpserver.CookieHandler
+	UpdateSessionCredentials(ctx context.Context, id string, credentials string) error
+	LookupSessionByAPIKey(ctx context.Context, apiKey string) (*model.Session, error)
+}
+
+func UnmarshalToken(s string) (*oauth2.Token, error) {
+	token := &oauth2.Token{}
+	err := json.NewDecoder(strings.NewReader(s)).Decode(token)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal OAuth2 token (cause: %w)", err)
+	}
+	return token, nil
+}
+
+func MarshalToken(token *oauth2.Token) (string, error) {
+	buffer := &strings.Builder{}
+	err := json.NewEncoder(buffer).Encode(token)
+	if err != nil {
+		return "", fmt.Errorf("failed to marshal OAuth2 token (cause: %w)", err)
+	}
+	return buffer.String(), nil
 }
 
 type Provider struct {
@@ -95,15 +121,6 @@ func (p *Provider) graphClient() (*msgraphsdk.GraphServiceClient, error) {
 	return client, nil
 }
 
-func (p *Provider) Mount(server *httpserver.Instance) {
-	server.HandleFunc("/msgraph/login", p.handleLogin)
-	server.HandleFunc("/msgraph/callback", p.handleCallback)
-	server.HandleFunc("/msgraph/contacts", p.handleContacts)
-	server.HandleFunc("/msgraph/emails", p.handleEmails)
-	server.HandleFunc("/msgraph/events", p.handleEvents)
-	server.HandleFunc("/msgraph/tasks", p.handleTasks)
-}
-
 func (p *Provider) handleLogin(w http.ResponseWriter, r *http.Request) {
 	p.logger.Info("initiating OAuth2 authentication flow")
 	state := uuid.NewString()
@@ -121,6 +138,17 @@ func (p *Provider) handleCallback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	token, err := p.oauth2Config().Exchange(r.Context(), code)
+	if err != nil {
+		http.Error(w, "token exchange failed: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+	credentials, err := MarshalToken(token)
+	if err != nil {
+		http.Error(w, "token exchange failed: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+	id, _ := p.runtime.SessionCookie().Get(r)
+	err = p.runtime.UpdateSessionCredentials(r.Context(), id, credentials)
 	if err != nil {
 		http.Error(w, "token exchange failed: "+err.Error(), http.StatusInternalServerError)
 		return
@@ -195,4 +223,33 @@ func (*Provider) Name() string {
 
 func (p *Provider) Capabilities() domain.ProviderCapabilities {
 	return domain.AllProviderCapabilities()
+}
+
+func (p *Provider) Mount(server *httpserver.Instance) {
+	server.HandleFunc("/msgraph/login", p.handleLogin)
+	server.HandleFunc("/msgraph/callback", p.handleCallback)
+	server.HandleFunc("/msgraph/contacts", p.handleContacts)
+	server.HandleFunc("/msgraph/emails", p.handleEmails)
+	server.HandleFunc("/msgraph/events", p.handleEvents)
+	server.HandleFunc("/msgraph/tasks", p.handleTasks)
+}
+
+func (p *Provider) CheckCredentials(credentials string) (*pim.CredentialInfo, error) {
+	info := &pim.CredentialInfo{
+		Valid: false,
+	}
+	if credentials == "" {
+		return info, nil
+	}
+	token, err := UnmarshalToken(credentials)
+	if err != nil {
+		return info, nil
+	}
+	info.Valid = true
+	info.Expiry = token.Expiry
+	return info, nil
+}
+
+func (p *Provider) RefreshCredentials(credentials string) (string, error) {
+	return credentials, nil
 }

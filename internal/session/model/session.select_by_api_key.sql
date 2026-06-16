@@ -1,7 +1,7 @@
 SELECT
     a.id,
     a.api_key_shown,
-    a.secrets,
+    a.credentials,
     a.last_access
 FROM
     session a

@@ -18,6 +18,8 @@ package demo
 
 import (
 	"github.com/google/uuid"
+	"github.com/tdrn-org/go-httpserver"
+	"github.com/tdrn-org/pim-mcp/internal/adapters/pim"
 	"github.com/tdrn-org/pim-mcp/internal/domain"
 )
 
@@ -41,4 +43,16 @@ func (*Provider) Name() string {
 
 func (p *Provider) Capabilities() domain.ProviderCapabilities {
 	return domain.AllProviderCapabilities()
+}
+
+func (p *Provider) Mount(server *httpserver.Instance) {
+}
+
+func (p *Provider) CheckCredentials(credentials string) (*pim.CredentialInfo, error) {
+	info := &pim.CredentialInfo{}
+	return info, nil
+}
+
+func (p *Provider) RefreshCredentials(credentials string) (string, error) {
+	return credentials, nil
 }
