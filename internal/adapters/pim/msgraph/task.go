@@ -31,7 +31,7 @@ import (
 )
 
 func (p *Provider) SearchTasks(ctx context.Context, filter domain.TaskFilter) ([]*domain.Task, error) {
-	client, err := p.graphClient()
+	client, err := p.graphClient(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -56,7 +56,7 @@ func (p *Provider) SearchTasks(ctx context.Context, filter domain.TaskFilter) ([
 }
 
 func (p *Provider) GetTask(ctx context.Context, id string) (*domain.Task, error) {
-	client, err := p.graphClient()
+	client, err := p.graphClient(ctx)
 	if err != nil {
 		return nil, err
 	}

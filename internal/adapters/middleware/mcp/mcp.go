@@ -17,6 +17,7 @@
 package mcp
 
 import (
+	"context"
 	"log/slog"
 	"net/http"
 	"net/url"
@@ -24,11 +25,26 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/tdrn-org/pim-mcp/internal/buildinfo"
 	"github.com/tdrn-org/pim-mcp/internal/domain"
+	"github.com/tdrn-org/pim-mcp/internal/session/model"
 )
 
 type Runtime interface {
 	BaseURL() *url.URL
 	Logger() *slog.Logger
+	LookupSessionByAPIKey(ctx context.Context, apiKey string) (*model.Session, error)
+}
+
+type contextKey string
+
+const sessionContextKey contextKey = "session"
+
+func SessionFromContext(ctx context.Context) *model.Session {
+	session, _ := ctx.Value(sessionContextKey).(*model.Session)
+	return session
+}
+
+func ContextWithSession(ctx context.Context, session *model.Session) context.Context {
+	return context.WithValue(ctx, sessionContextKey, session)
 }
 
 func NewHandler(runtime Runtime, provider domain.Provider) http.Handler {
@@ -41,8 +57,21 @@ func NewHandler(runtime Runtime, provider domain.Provider) http.Handler {
 		Logger: runtime.Logger(),
 	}
 	server := mcp.NewServer(impl, options)
-	// TODO: Logging
-	//server.AddReceivingMiddleware()
+
+	// Receiving middleware: validate API key and inject session into context
+	server.AddReceivingMiddleware(func(next mcp.MethodHandler) mcp.MethodHandler {
+		return func(ctx context.Context, method string, req mcp.Request) (mcp.Result, error) {
+			session := SessionFromContext(ctx)
+			if session != nil {
+				runtime.Logger().Info("mcp request with valid session",
+					slog.String("method", method),
+					slog.String("session_id", session.ID))
+			}
+			// Allow unauthenticated access for backward compatibility
+			return next(ctx, method, req)
+		}
+	})
+
 	capabilities := provider.Capabilities()
 	if capabilities.Email {
 		addEmailTools(server, provider.(domain.EmailProvider))
@@ -56,6 +85,18 @@ func NewHandler(runtime Runtime, provider domain.Provider) http.Handler {
 	if capabilities.Contacts {
 		addContactTools(server, provider.(domain.ContactProvider))
 	}
-	getServerFromRequest := func(_ *http.Request) *mcp.Server { return server }
+
+	getServerFromRequest := func(r *http.Request) *mcp.Server {
+		apiKey := r.Header.Get("X-API-Key")
+		if apiKey != "" {
+			session, err := runtime.LookupSessionByAPIKey(r.Context(), apiKey)
+			if err == nil && session != nil {
+				// Inject session into the request context so middleware and tools can access it
+				ctx := ContextWithSession(r.Context(), session)
+				*r = *r.WithContext(ctx)
+			}
+		}
+		return server
+	}
 	return mcp.NewStreamableHTTPHandler(getServerFromRequest, nil)
 }

@@ -30,7 +30,7 @@ import (
 )
 
 func (p *Provider) SearchEvents(ctx context.Context, filter domain.EventFilter) ([]*domain.Event, error) {
-	client, err := p.graphClient()
+	client, err := p.graphClient(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -51,7 +51,7 @@ func (p *Provider) SearchEvents(ctx context.Context, filter domain.EventFilter) 
 }
 
 func (p *Provider) GetEvent(ctx context.Context, id string) (*domain.Event, error) {
-	client, err := p.graphClient()
+	client, err := p.graphClient(ctx)
 	if err != nil {
 		return nil, err
 	}

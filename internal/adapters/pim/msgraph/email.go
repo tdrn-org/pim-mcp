@@ -31,7 +31,7 @@ import (
 )
 
 func (p *Provider) SearchEmails(ctx context.Context, filter domain.EmailFilter) ([]*domain.Email, error) {
-	client, err := p.graphClient()
+	client, err := p.graphClient(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -58,7 +58,7 @@ func (p *Provider) SearchEmails(ctx context.Context, filter domain.EmailFilter) 
 }
 
 func (p *Provider) GetEmail(ctx context.Context, id string) (*domain.Email, error) {
-	client, err := p.graphClient()
+	client, err := p.graphClient(ctx)
 	if err != nil {
 		return nil, err
 	}

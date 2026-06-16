@@ -29,7 +29,7 @@ import (
 )
 
 func (p *Provider) SearchContacts(ctx context.Context, filter domain.ContactFilter) ([]*domain.Contact, error) {
-	client, err := p.graphClient()
+	client, err := p.graphClient(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -50,7 +50,7 @@ func (p *Provider) SearchContacts(ctx context.Context, filter domain.ContactFilt
 }
 
 func (p *Provider) GetContact(ctx context.Context, id string) (*domain.Contact, error) {
-	client, err := p.graphClient()
+	client, err := p.graphClient(ctx)
 	if err != nil {
 		return nil, err
 	}

@@ -31,6 +31,7 @@ import (
 	msgraphsdk "github.com/microsoftgraph/msgraph-sdk-go"
 	"github.com/tdrn-org/go-httpserver"
 	"github.com/tdrn-org/pim-mcp/config"
+	"github.com/tdrn-org/pim-mcp/internal/adapters/middleware/mcp"
 	"github.com/tdrn-org/pim-mcp/internal/adapters/pim"
 	"github.com/tdrn-org/pim-mcp/internal/domain"
 	"github.com/tdrn-org/pim-mcp/internal/session/model"
@@ -70,9 +71,7 @@ func MarshalToken(token *oauth2.Token) (string, error) {
 type Provider struct {
 	runtime Runtime
 	cfg     *config.MSGraphConfig
-	//TODO: Store externally
-	accessToken string
-	logger      *slog.Logger
+	logger  *slog.Logger
 }
 
 func NewProvider(runtime Runtime, cfg *config.MSGraphConfig) *Provider {
@@ -81,6 +80,21 @@ func NewProvider(runtime Runtime, cfg *config.MSGraphConfig) *Provider {
 		cfg:     cfg,
 		logger:  slog.With(slog.String("provider", Name)),
 	}
+}
+
+func (p *Provider) accessTokenFromContext(ctx context.Context) (string, error) {
+	session := mcp.SessionFromContext(ctx)
+	if session == nil || session.Credentials == "" {
+		return "", fmt.Errorf("no session credentials available")
+	}
+	token, err := UnmarshalToken(session.Credentials)
+	if err != nil {
+		return "", fmt.Errorf("failed to unmarshal session credentials: %w", err)
+	}
+	if !token.Valid() {
+		return "", fmt.Errorf("session credentials expired")
+	}
+	return token.AccessToken, nil
 }
 
 func (p *Provider) oauth2Config() *oauth2.Config {
@@ -99,8 +113,12 @@ func (p *Provider) oauth2Config() *oauth2.Config {
 	}
 }
 
-func (p *Provider) graphClient() (*msgraphsdk.GraphServiceClient, error) {
-	credential, err := azidentity.NewOnBehalfOfCredentialWithSecret(p.cfg.TenantID, p.cfg.ClientID, p.accessToken, p.cfg.ClientSecret, nil)
+func (p *Provider) graphClient(ctx context.Context) (*msgraphsdk.GraphServiceClient, error) {
+	accessToken, err := p.accessTokenFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	credential, err := azidentity.NewOnBehalfOfCredentialWithSecret(p.cfg.TenantID, p.cfg.ClientID, accessToken, p.cfg.ClientSecret, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create OBO credential (cause: %w)", err)
 	}
@@ -154,9 +172,8 @@ func (p *Provider) handleCallback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	//TODO: Persistenz + Token-Management
-	p.accessToken = token.AccessToken
-	// refreshToken := token.RefreshToken
+	// Credentials are now stored in the session DB.
+	// MCP tools retrieve them per-call via SessionFromContext(ctx).
 
 	http.Redirect(w, r, p.runtime.BaseURL().String(), http.StatusFound)
 }
