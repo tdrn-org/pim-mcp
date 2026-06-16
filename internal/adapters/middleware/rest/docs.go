@@ -23,27 +23,39 @@ const docTemplate = `{
     "paths": {
         "/api/v1/login": {
             "post": {
-                "description": "Initiate PIM provider login for the current user",
+                "description": "Initiate PIM provider login for the current user. Optionally provide an api_key for session recovery.",
                 "consumes": [
                     "application/json"
                 ],
                 "produces": [
-                    "text/plain"
+                    "application/json"
                 ],
                 "summary": "Initiate PIM provider login",
                 "parameters": [
                     {
-                        "description": "login using api_key",
-                        "name": "api_key",
+                        "description": "optional api_key for session recovery",
+                        "name": "body",
                         "in": "body",
                         "schema": {
-                            "type": "string"
+                            "$ref": "#/definitions/rest.loginRequest"
                         }
                     }
                 ],
                 "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/rest.SessionInfo"
+                        }
+                    },
                     "302": {
                         "description": "Found",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "401": {
+                        "description": "invalid api_key",
                         "schema": {
                             "type": "string"
                         }
@@ -147,6 +159,14 @@ const docTemplate = `{
                     "$ref": "#/definitions/rest.CredentialInfo"
                 },
                 "provider_name": {
+                    "type": "string"
+                }
+            }
+        },
+        "rest.loginRequest": {
+            "type": "object",
+            "properties": {
+                "api_key": {
                     "type": "string"
                 }
             }

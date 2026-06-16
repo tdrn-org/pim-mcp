@@ -126,3 +126,25 @@ func (s *Store) LookupSessionByAPIKey(ctx context.Context, apiKey string) (*mode
 	}
 	return session, nil
 }
+
+func (s *Store) DeleteSession(ctx context.Context, id string) error {
+	txCtx, tx, err := s.driver.BeginTx(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.RollbackUncommitedTx(txCtx)
+
+	session, err := model.SelectSession(txCtx, s.driver, id)
+	if err != nil {
+		return err
+	}
+	if session == nil {
+		return fmt.Errorf("unknown session id '%s'", id)
+	}
+	err = session.Delete(txCtx)
+	if err != nil {
+		return err
+	}
+
+	return tx.CommitTx(txCtx)
+}

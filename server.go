@@ -264,8 +264,7 @@ func (runtime *serverRuntime) LookupSessionByAPIKey(ctx context.Context, apiKey 
 }
 
 func (runtime *serverRuntime) DeleteSession(ctx context.Context, id string) error {
-	// TODO: Implement
-	return nil
+	return runtime.server.store.DeleteSession(ctx, id)
 }
 
 func (runtime *serverRuntime) LoginURL(ctx context.Context) (*url.URL, error) {

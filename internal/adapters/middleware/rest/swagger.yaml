@@ -16,6 +16,11 @@ definitions:
       provider_name:
         type: string
     type: object
+  rest.loginRequest:
+    properties:
+      api_key:
+        type: string
+    type: object
 host: localhost:9123
 info:
   contact:
@@ -31,18 +36,27 @@ paths:
     post:
       consumes:
       - application/json
-      description: Initiate PIM provider login for the current user
+      description: Initiate PIM provider login for the current user. Optionally provide
+        an api_key for session recovery.
       parameters:
-      - description: login using api_key
+      - description: optional api_key for session recovery
         in: body
-        name: api_key
+        name: body
         schema:
-          type: string
+          $ref: '#/definitions/rest.loginRequest'
       produces:
-      - text/plain
+      - application/json
       responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/rest.SessionInfo'
         "302":
           description: Found
+          schema:
+            type: string
+        "401":
+          description: invalid api_key
           schema:
             type: string
         "500":

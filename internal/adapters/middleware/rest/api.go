@@ -52,6 +52,10 @@ type CredentialInfo struct {
 	Expiry time.Time `json:"expiry"`
 }
 
+type loginRequest struct {
+	APIKey string `json:"api_key"`
+}
+
 //	@title			PIM MCP Server REST API
 //	@version		1.0
 //	@description	MCP server providing Agent access to PIM services.
@@ -83,8 +87,7 @@ func (api *API) Mount(server *httpserver.Instance) {
 	server.HandleFunc("GET "+PathPing, api.PingGet)
 	server.HandleFunc("GET "+PathSession, api.SessionGet)
 	server.HandleFunc("DELETE "+PathSession, api.SessionDelete)
-	//TODO: Make it POST only
-	server.HandleFunc(""+PathLogin, api.LoginPost)
+	server.HandleFunc("POST "+PathLogin, api.LoginPost)
 }
 
 const responseOK string = "ok"
@@ -169,17 +172,58 @@ func (api *API) SessionDelete(w http.ResponseWriter, r *http.Request) {
 // POST @BasePath/login
 //
 //	@Summary		Initiate PIM provider login
-//	@Description	Initiate PIM provider login for the current user
+//	@Description	Initiate PIM provider login for the current user. Optionally provide an api_key for session recovery.
 //	@Accept			json
-//	@Produce		text/plain
-//	@Param			api_key	body		string	false	"login using api_key"
+//	@Produce		json
+//	@Param			body	body		loginRequest	false	"optional api_key for session recovery"
+//	@Success		200		{object}	SessionInfo
 //	@Success		302		{string}	string	""
+//	@Failure		401		{string}	string	"invalid api_key"
 //	@Failure		500		{string}	string	"server error"
 //	@Router			/api/v1/login [post]
 func (api *API) LoginPost(w http.ResponseWriter, r *http.Request) {
+	// Try to parse optional api_key from JSON body
+	var req loginRequest
+	if r.Body != nil && r.ContentLength > 0 {
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			// If body can't be parsed, fall through to OAuth2 redirect
+			req.APIKey = ""
+		}
+	}
+
+	if req.APIKey != "" {
+		// Session recovery via API key
+		session, err := api.runtime.LookupSessionByAPIKey(r.Context(), req.APIKey)
+		if err != nil {
+			api.sendError(w, r, http.StatusInternalServerError, err)
+			return
+		}
+		if session == nil {
+			api.sendPlainTextResponse(w, r, http.StatusUnauthorized, "invalid api_key")
+			return
+		}
+		provider := api.runtime.Provider()
+		credenitalInfo, err := provider.CheckCredentials(session.Credentials)
+		if err != nil {
+			api.sendError(w, r, http.StatusInternalServerError, err)
+			return
+		}
+		sessionInfo := &SessionInfo{
+			ProviderName: provider.Name(),
+			Credentials: CredentialInfo{
+				Valid:  credenitalInfo.Valid,
+				Expiry: credenitalInfo.Expiry,
+			},
+		}
+		api.runtime.SessionCookie().Set(w, session.ID, false)
+		api.sendApplicationJSONResponse(w, r, http.StatusOK, sessionInfo)
+		return
+	}
+
+	// No API key — standard OAuth2 flow
 	loginURL, err := api.runtime.LoginURL(r.Context())
 	if err != nil {
-		//TODO
+		api.sendError(w, r, http.StatusInternalServerError, err)
 		return
 	}
 	http.Redirect(w, r, loginURL.String(), http.StatusFound)

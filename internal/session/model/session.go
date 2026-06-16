@@ -152,3 +152,21 @@ func (s *Session) Update(ctx context.Context) error {
 
 	return tx.CommitTx(txCtx)
 }
+
+//go:embed session.delete.sql
+var sessionDeleteSQL string
+
+func (s *Session) Delete(ctx context.Context) error {
+	txCtx, tx, err := s.driver.BeginTx(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.RollbackUncommitedTx(txCtx)
+
+	err = tx.ExecTx(txCtx, sessionDeleteSQL, s.ID)
+	if err != nil {
+		return err
+	}
+
+	return tx.CommitTx(txCtx)
+}
