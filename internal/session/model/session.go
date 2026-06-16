@@ -24,20 +24,22 @@ import (
 )
 
 type Session struct {
-	driver     *database.Driver
-	ID         string
-	APIKey     string
-	Secrets    string
-	LastAccess int64
+	driver      *database.Driver
+	ID          string
+	APIKey      string
+	APIKeyShown bool
+	Secrets     string
+	LastAccess  int64
 }
 
 func NewSession(driver *database.Driver, apiKey, secrets string) *Session {
 	return &Session{
-		driver:     driver,
-		ID:         database.NewID(),
-		APIKey:     apiKey,
-		Secrets:    secrets,
-		LastAccess: database.Now(),
+		driver:      driver,
+		ID:          database.NewID(),
+		APIKey:      apiKey,
+		APIKeyShown: false,
+		Secrets:     secrets,
+		LastAccess:  database.Now(),
 	}
 }
 
@@ -59,7 +61,43 @@ func SelectSession(ctx context.Context, driver *database.Driver, id string) (*Se
 		driver: driver,
 		ID:     id,
 	}
-	err = row.Scan(&s.APIKey, &s.Secrets, &s.LastAccess)
+	err = row.Scan(&s.APIKey, &s.APIKeyShown, &s.Secrets, &s.LastAccess)
+	if database.NoRows(err) {
+		commitErr := tx.CommitTx(txCtx)
+		if commitErr != nil {
+			err = commitErr
+		}
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	err = tx.CommitTx(txCtx)
+	if err != nil {
+		return nil, err
+	}
+	return s, nil
+}
+
+//go:embed session.select_by_api_key.sql
+var sessionSelectByAPIKeySQL string
+
+func SelectSessionByAPIKey(ctx context.Context, driver *database.Driver, apiKey string) (*Session, error) {
+	txCtx, tx, err := driver.BeginTx(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.RollbackUncommitedTx(txCtx)
+
+	row, err := tx.QueryRowTx(txCtx, sessionSelectByAPIKeySQL, apiKey)
+	if err != nil {
+		return nil, err
+	}
+	s := &Session{
+		driver: driver,
+		APIKey: apiKey,
+	}
+	err = row.Scan(&s.ID, &s.APIKeyShown, &s.Secrets, &s.LastAccess)
 	if database.NoRows(err) {
 		commitErr := tx.CommitTx(txCtx)
 		if commitErr != nil {
@@ -87,7 +125,7 @@ func (s *Session) Insert(ctx context.Context) error {
 	}
 	defer tx.RollbackUncommitedTx(txCtx)
 
-	err = tx.ExecTx(txCtx, sessionInsertSQL, s.ID, s.APIKey, s.Secrets, s.LastAccess)
+	err = tx.ExecTx(txCtx, sessionInsertSQL, s.ID, s.APIKey, s.APIKeyShown, s.Secrets, s.LastAccess)
 	if err != nil {
 		return err
 	}
@@ -105,7 +143,7 @@ func (s *Session) Update(ctx context.Context) error {
 	}
 	defer tx.RollbackUncommitedTx(txCtx)
 
-	err = tx.ExecTx(txCtx, sessionUpdateSQL, s.Secrets, s.LastAccess, s.ID)
+	err = tx.ExecTx(txCtx, sessionUpdateSQL, s.APIKeyShown, s.Secrets, s.LastAccess, s.ID)
 	if err != nil {
 		return err
 	}

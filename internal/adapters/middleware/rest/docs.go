@@ -33,10 +33,12 @@ const docTemplate = `{
                 "summary": "Initiate PIM provider login",
                 "parameters": [
                     {
-                        "type": "string",
                         "description": "login using api_key",
                         "name": "api_key",
-                        "in": "formData"
+                        "in": "body",
+                        "schema": {
+                            "type": "string"
+                        }
                     }
                 ],
                 "responses": {

@@ -36,10 +36,15 @@ func TestSession(t *testing.T) {
 	err := session1.Insert(t.Context())
 	require.NoError(t, err)
 
-	// Select
+	// Select (by ID)
 	session2, err := model.SelectSession(t.Context(), driver, session1.ID)
 	require.NoError(t, err)
 	require.Equal(t, session1, session2)
+
+	// Select (by APIKey)
+	session3, err := model.SelectSessionByAPIKey(t.Context(), driver, session1.APIKey)
+	require.NoError(t, err)
+	require.Equal(t, session1, session3)
 
 	// Update
 	session2.Secrets = "new secrets"

@@ -78,8 +78,8 @@ func (api *API) Mount(server *httpserver.Instance) {
 	server.HandleFunc("GET "+PathPing, api.PingGet)
 	server.HandleFunc("GET "+PathSession, api.SessionGet)
 	server.HandleFunc("DELETE "+PathSession, api.SessionDelete)
-	//TODO: Make it POST
-	server.HandleFunc("GET "+PathLogin, api.LoginPost)
+	//TODO: Make it POST only
+	server.HandleFunc(""+PathLogin, api.LoginPost)
 }
 
 const responseOK string = "ok"
@@ -148,7 +148,7 @@ func (api *API) SessionDelete(w http.ResponseWriter, r *http.Request) {
 //	@Description	Initiate PIM provider login for the current user
 //	@Accept			json
 //	@Produce		text/plain
-//	@Param			api_key	formData	string	false	"login using api_key"
+//	@Param			api_key	body		string	false	"login using api_key"
 //	@Success		302		{string}	string	""
 //	@Failure		500		{string}	string	"server error"
 //	@Router			/api/v1/login [post]

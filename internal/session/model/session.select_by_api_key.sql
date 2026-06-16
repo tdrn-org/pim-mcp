@@ -1,9 +1,9 @@
 SELECT
-    a.api_key,
+    a.id,
     a.api_key_shown,
     a.secrets,
     a.last_access
 FROM
     session a
 WHERE
-    a.id = $1
+    a.api_key = $1

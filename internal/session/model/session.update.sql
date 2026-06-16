@@ -1,7 +1,8 @@
 UPDATE
     session
 SET
-    secrets = $1,
-    last_access = $2
+    api_key_shown = $1,
+    secrets = $2,
+    last_access = $3
 WHERE
-    id = $3
+    id = $4

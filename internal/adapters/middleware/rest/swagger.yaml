@@ -25,9 +25,10 @@ paths:
       description: Initiate PIM provider login for the current user
       parameters:
       - description: login using api_key
-        in: formData
+        in: body
         name: api_key
-        type: string
+        schema:
+          type: string
       produces:
       - text/plain
       responses:

@@ -130,7 +130,7 @@ func (p *Provider) handleCallback(w http.ResponseWriter, r *http.Request) {
 	p.accessToken = token.AccessToken
 	// refreshToken := token.RefreshToken
 
-	fmt.Fprint(w, p.accessToken)
+	http.Redirect(w, r, p.runtime.BaseURL().String(), http.StatusFound)
 }
 
 func (p *Provider) handleContacts(w http.ResponseWriter, r *http.Request) {
