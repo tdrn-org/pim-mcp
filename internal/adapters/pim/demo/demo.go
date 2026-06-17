@@ -17,6 +17,9 @@
 package demo
 
 import (
+	"log/slog"
+	"net/url"
+
 	"github.com/google/uuid"
 	"github.com/tdrn-org/go-httpserver"
 	"github.com/tdrn-org/pim-mcp/internal/adapters/pim"
@@ -25,12 +28,21 @@ import (
 
 const Name = "demo"
 
-type Provider struct {
-	id string
+type Runtime interface {
+	BaseURL() *url.URL
+	Logger() *slog.Logger
 }
 
-func NewProvider() *Provider {
-	return &Provider{id: uuid.NewString()}
+type Provider struct {
+	runtime Runtime
+	id      string
+}
+
+func NewProvider(runtime Runtime) *Provider {
+	return &Provider{
+		runtime: runtime,
+		id:      uuid.NewString(),
+	}
 }
 
 func (p *Provider) ID() string {
@@ -46,6 +58,10 @@ func (p *Provider) Capabilities() domain.ProviderCapabilities {
 }
 
 func (p *Provider) Mount(server *httpserver.Instance) {
+}
+
+func (p *Provider) LoginURL() *url.URL {
+	return p.runtime.BaseURL()
 }
 
 func (p *Provider) CheckCredentials(credentials string) (*pim.CredentialInfo, error) {

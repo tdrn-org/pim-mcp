@@ -23,6 +23,8 @@ import (
 	"log/slog"
 	"net/http"
 	"net/url"
+	"sync"
+	"time"
 
 	"github.com/tdrn-org/go-database"
 	"github.com/tdrn-org/go-database/memory"
@@ -40,15 +42,21 @@ import (
 	"github.com/tdrn-org/pim-mcp/internal/web"
 )
 
+const serverJobTickerSchedule time.Duration = 5 * time.Minute
+
 type Server struct {
-	cfg           *config.Config
-	store         *session.Store
-	httpServer    *httpserver.Instance
-	sessionCookie *httpserver.CookieHandler
-	provider      pim.Provider
-	api           *rest.API
-	baseURL       *url.URL
-	logger        *slog.Logger
+	cfg                 *config.Config
+	store               *session.Store
+	httpServer          *httpserver.Instance
+	sessionCookie       *httpserver.CookieHandler
+	provider            pim.Provider
+	api                 *rest.API
+	baseURL             *url.URL
+	jobTicker           *time.Ticker
+	jobTickerShutdown   chan any
+	jobTickerShutdownWG sync.WaitGroup
+
+	logger *slog.Logger
 }
 
 func StartServer(ctx context.Context, cfg *config.Config) (*Server, error) {
@@ -62,9 +70,10 @@ func StartServer(ctx context.Context, cfg *config.Config) (*Server, error) {
 	startFuncs := []func(context.Context, *config.Config) error{
 		s.startStore,
 		s.startHttpServer,
-		s.startRestAPI,
 		s.startMCPServer,
+		s.startRestAPI,
 		s.startUI,
+		s.startJobTicker,
 	}
 	for _, startFunc := range startFuncs {
 		err := startFunc(ctx, cfg)
@@ -87,6 +96,7 @@ func (s *Server) Run(ctx context.Context) error {
 
 func (s *Server) Shutdown(ctx context.Context) error {
 	shutdownFuncs := []func(context.Context) error{
+		s.shutdownJobTicker,
 		s.shutdownHttpServer,
 	}
 	shutdownErrs := make([]error, 0, len(shutdownFuncs))
@@ -194,18 +204,11 @@ func (s *Server) closeHttpServer() error {
 	return s.httpServer.Close()
 }
 
-func (s *Server) startRestAPI(_ context.Context, _ *config.Config) error {
-	runtime := &serverRuntime{server: s}
-	s.api = rest.NewAPI(runtime)
-	s.api.Mount(s.httpServer)
-	return nil
-}
-
 func (s *Server) startMCPServer(ctx context.Context, cfg *config.Config) error {
 	runtime := &serverRuntime{server: s}
 	switch cfg.Provider.Adapter {
 	case config.ProviderAdapterDemo:
-		s.provider = demo.NewProvider()
+		s.provider = demo.NewProvider(runtime)
 	case config.ProviderAdapterMSGraph:
 		s.provider = msgraph.NewProvider(runtime, &cfg.Provider.MSGraph)
 	default:
@@ -217,12 +220,49 @@ func (s *Server) startMCPServer(ctx context.Context, cfg *config.Config) error {
 	return nil
 }
 
+func (s *Server) startRestAPI(_ context.Context, _ *config.Config) error {
+	runtime := &serverRuntime{server: s}
+	s.api = rest.NewAPI(runtime)
+	s.api.Mount(s.httpServer)
+	return nil
+}
+
 func (s *Server) startUI(_ context.Context, _ *config.Config) error {
 	// Landing page at / — checks for existing session and redirects to /session
-	s.httpServer.HandleFunc("GET /", s.handleLanding)
+	s.httpServer.HandleFunc("/", s.handleLanding)
 	// SPA at /session — SvelteKit UI, all paths served by single-page app
 	s.httpServer.HandleFunc("/session/", web.ServeSPA)
 	return nil
+}
+
+func (s *Server) startJobTicker(_ context.Context, _ *config.Config) error {
+	schedule := serverJobTickerSchedule
+	s.jobTicker = time.NewTicker(schedule)
+	s.jobTickerShutdown = make(chan any)
+	slog.Info("starting job ticker", slog.String("schedule", schedule.String()))
+	s.jobTickerShutdownWG.Go(func() {
+		for stopped := false; !stopped; {
+			select {
+			case <-s.jobTickerShutdown:
+				stopped = true
+			case <-s.jobTicker.C:
+				s.runJobs()
+			}
+		}
+		slog.Info("job ticker stopped")
+	})
+	return nil
+}
+
+func (s *Server) shutdownJobTicker(_ context.Context) error {
+	s.jobTicker.Stop()
+	s.jobTickerShutdown <- true
+	s.jobTickerShutdownWG.Wait()
+	return nil
+}
+
+func (s *Server) runJobs() {
+
 }
 
 type serverRuntime struct {
@@ -271,13 +311,17 @@ func (runtime *serverRuntime) DeleteSession(ctx context.Context, id string) erro
 }
 
 func (runtime *serverRuntime) LoginURL(ctx context.Context) (*url.URL, error) {
-	return runtime.BaseURL().JoinPath("/msgraph/login"), nil
+	return runtime.Provider().LoginURL(), nil
 }
 
 // handleLanding serves the landing page at GET /.
 // If a valid session cookie exists, redirects to /session.
 // Otherwise, serves the prerendered landing page (pure HTML, no JS).
 func (s *Server) handleLanding(w http.ResponseWriter, r *http.Request) {
+	if r.URL.Path != "/" {
+		web.Handler().ServeHTTP(w, r)
+		return
+	}
 	// Check for existing session cookie
 	id, ok := s.sessionCookie.Get(r)
 	if ok {
@@ -288,5 +332,5 @@ func (s *Server) handleLanding(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	// No session — serve the prerendered landing page
-	web.LandingPageHandler().ServeHTTP(w, r)
+	web.Handler().ServeHTTP(w, r)
 }

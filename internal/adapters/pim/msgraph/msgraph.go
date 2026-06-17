@@ -251,6 +251,10 @@ func (p *Provider) Mount(server *httpserver.Instance) {
 	server.HandleFunc("/msgraph/tasks", p.handleTasks)
 }
 
+func (p *Provider) LoginURL() *url.URL {
+	return p.runtime.BaseURL().JoinPath("/msgraph/login")
+}
+
 func (p *Provider) CheckCredentials(credentials string) (*pim.CredentialInfo, error) {
 	info := &pim.CredentialInfo{
 		Valid: false,
@@ -262,7 +266,7 @@ func (p *Provider) CheckCredentials(credentials string) (*pim.CredentialInfo, er
 	if err != nil {
 		return info, nil
 	}
-	info.Valid = true
+	info.Valid = token.Valid()
 	info.Expiry = token.Expiry
 	return info, nil
 }

@@ -17,6 +17,7 @@
 package pim
 
 import (
+	"net/url"
 	"time"
 
 	"github.com/tdrn-org/go-httpserver"
@@ -26,6 +27,7 @@ import (
 type Provider interface {
 	domain.Provider
 	Mount(server *httpserver.Instance)
+	LoginURL() *url.URL
 	CheckCredentials(credentials string) (*CredentialInfo, error)
 	RefreshCredentials(credentials string) (string, error)
 }
