@@ -218,7 +218,10 @@ func (s *Server) startMCPServer(ctx context.Context, cfg *config.Config) error {
 }
 
 func (s *Server) startUI(_ context.Context, _ *config.Config) error {
-	s.httpServer.Handle("/", web.Handler())
+	// Landing page at / — checks for existing session and redirects to /session
+	s.httpServer.HandleFunc("GET /", s.handleLanding)
+	// SPA at /session — SvelteKit UI, all paths served by single-page app
+	s.httpServer.HandleFunc("/session/", web.ServeSPA)
 	return nil
 }
 
@@ -269,4 +272,21 @@ func (runtime *serverRuntime) DeleteSession(ctx context.Context, id string) erro
 
 func (runtime *serverRuntime) LoginURL(ctx context.Context) (*url.URL, error) {
 	return runtime.BaseURL().JoinPath("/msgraph/login"), nil
+}
+
+// handleLanding serves the landing page at GET /.
+// If a valid session cookie exists, redirects to /session.
+// Otherwise, serves the prerendered landing page (pure HTML, no JS).
+func (s *Server) handleLanding(w http.ResponseWriter, r *http.Request) {
+	// Check for existing session cookie
+	id, ok := s.sessionCookie.Get(r)
+	if ok {
+		session, err := s.store.GetSession(r.Context(), id)
+		if err == nil && session != nil {
+			http.Redirect(w, r, "/session", http.StatusFound)
+			return
+		}
+	}
+	// No session — serve the prerendered landing page
+	web.LandingPageHandler().ServeHTTP(w, r)
 }
