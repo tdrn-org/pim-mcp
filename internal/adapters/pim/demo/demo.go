@@ -17,8 +17,10 @@
 package demo
 
 import (
+	"context"
 	"log/slog"
 	"net/url"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/tdrn-org/go-httpserver"
@@ -69,6 +71,6 @@ func (p *Provider) CheckCredentials(credentials string) (*pim.CredentialInfo, er
 	return info, nil
 }
 
-func (p *Provider) RefreshCredentials(credentials string) (string, error) {
+func (p *Provider) RefreshCredentials(ctx context.Context, credentials string, due time.Time) (string, error) {
 	return credentials, nil
 }

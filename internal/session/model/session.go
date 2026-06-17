@@ -31,7 +31,7 @@ type Session struct {
 	APIKey      string
 	APIKeyShown bool
 	Credentials string
-	LastAccess  int64
+	LastUpdate  int64
 }
 
 const sessionAPIKeyLenght int = 64
@@ -47,7 +47,6 @@ func NewSession(driver *database.Driver) *Session {
 		APIKey:      apiKey,
 		APIKeyShown: false,
 		Credentials: "",
-		LastAccess:  database.Now(),
 	}
 }
 
@@ -69,7 +68,7 @@ func SelectSession(ctx context.Context, driver *database.Driver, id string) (*Se
 		driver: driver,
 		ID:     id,
 	}
-	err = row.Scan(&s.APIKey, &s.APIKeyShown, &s.Credentials, &s.LastAccess)
+	err = row.Scan(&s.APIKey, &s.APIKeyShown, &s.Credentials, &s.LastUpdate)
 	if database.NoRows(err) {
 		s = nil
 		err = nil
@@ -82,6 +81,41 @@ func SelectSession(ctx context.Context, driver *database.Driver, id string) (*Se
 		return nil, err
 	}
 	return s, nil
+}
+
+//go:embed session.select_all.sql
+var sessionSelectAllSQL string
+
+func SelectSessions(ctx context.Context, driver *database.Driver) ([]*Session, error) {
+	txCtx, tx, err := driver.BeginTx(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.RollbackUncommitedTx(txCtx)
+
+	rows, err := tx.QueryTx(txCtx, sessionSelectAllSQL)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	sessions := make([]*Session, 0)
+	for rows.Next() {
+		s := &Session{
+			driver: driver,
+		}
+		err = rows.Scan(&s.ID, &s.APIKey, &s.APIKeyShown, &s.Credentials, &s.LastUpdate)
+		if err != nil {
+			return nil, err
+		}
+		sessions = append(sessions, s)
+	}
+
+	err = tx.CommitTx(txCtx)
+	if err != nil {
+		return nil, err
+	}
+	return sessions, nil
 }
 
 //go:embed session.select_by_api_key.sql
@@ -102,7 +136,7 @@ func SelectSessionByAPIKey(ctx context.Context, driver *database.Driver, apiKey 
 		driver: driver,
 		APIKey: apiKey,
 	}
-	err = row.Scan(&s.ID, &s.APIKeyShown, &s.Credentials, &s.LastAccess)
+	err = row.Scan(&s.ID, &s.APIKeyShown, &s.Credentials, &s.LastUpdate)
 	if database.NoRows(err) {
 		s = nil
 		err = nil
@@ -127,7 +161,8 @@ func (s *Session) Insert(ctx context.Context) error {
 	}
 	defer tx.RollbackUncommitedTx(txCtx)
 
-	err = tx.ExecTx(txCtx, sessionInsertSQL, s.ID, s.APIKey, s.APIKeyShown, s.Credentials, s.LastAccess)
+	s.LastUpdate = database.Now()
+	err = tx.ExecTx(txCtx, sessionInsertSQL, s.ID, s.APIKey, s.APIKeyShown, s.Credentials, s.LastUpdate)
 	if err != nil {
 		return err
 	}
@@ -145,7 +180,8 @@ func (s *Session) Update(ctx context.Context) error {
 	}
 	defer tx.RollbackUncommitedTx(txCtx)
 
-	err = tx.ExecTx(txCtx, sessionUpdateSQL, s.APIKeyShown, s.Credentials, s.LastAccess, s.ID)
+	s.LastUpdate = database.Now()
+	err = tx.ExecTx(txCtx, sessionUpdateSQL, s.APIKeyShown, s.Credentials, s.LastUpdate, s.ID)
 	if err != nil {
 		return err
 	}
@@ -164,6 +200,21 @@ func (s *Session) Delete(ctx context.Context) error {
 	defer tx.RollbackUncommitedTx(txCtx)
 
 	err = tx.ExecTx(txCtx, sessionDeleteSQL, s.ID)
+	if err != nil {
+		return err
+	}
+
+	return tx.CommitTx(txCtx)
+}
+
+func DeleteSession(ctx context.Context, driver *database.Driver, id string) error {
+	txCtx, tx, err := driver.BeginTx(ctx)
+	if err != nil {
+		return err
+	}
+	defer tx.RollbackUncommitedTx(txCtx)
+
+	err = tx.ExecTx(txCtx, sessionDeleteSQL, id)
 	if err != nil {
 		return err
 	}

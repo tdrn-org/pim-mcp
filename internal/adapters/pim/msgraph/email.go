@@ -71,10 +71,18 @@ func (p *Provider) GetEmail(ctx context.Context, id string) (*domain.Email, erro
 }
 
 func (p *Provider) emailFromResponse(model models.Messageable) *domain.Email {
+	body := model.GetUniqueBody()
+	if body == nil {
+		body = model.GetBody()
+	}
+	content := ""
+	if body != nil {
+		content = *body.GetContent()
+	}
 	return &domain.Email{
 		ID:         ptrString(model.GetId()),
 		Subject:    ptrString(model.GetSubject()),
-		Body:       ptrString(model.GetBodyPreview()),
+		Body:       content,
 		From:       p.addressFromResponse(model.GetFrom()),
 		To:         p.addressesFromResponse(model.GetToRecipients()),
 		CC:         p.addressesFromResponse(model.GetCcRecipients()),
@@ -142,6 +150,7 @@ func (p *Provider) emailFilterRequestConfig(filter domain.EmailFilter) *users.It
 	}
 	headers := &kiota.RequestHeaders{}
 	headers.Add("ConsistencyLevel", "eventual")
+	headers.Add("Prefer", "outlook.body-content-type=\"text\"")
 	requestConfig := &users.ItemMessagesRequestBuilderGetRequestConfiguration{
 		QueryParameters: &users.ItemMessagesRequestBuilderGetQueryParameters{
 			Search: search,

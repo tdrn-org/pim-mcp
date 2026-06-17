@@ -50,6 +50,11 @@ func TestSession(t *testing.T) {
 	session2.Credentials = "new credentials"
 	err = session2.Update(t.Context())
 	require.NoError(t, err)
+
+	// Select all
+	sessions, err := model.SelectSessions(t.Context(), driver)
+	require.NoError(t, err)
+	require.Len(t, sessions, 1)
 }
 
 func newDatabase(t *testing.T) *database.Driver {

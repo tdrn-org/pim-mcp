@@ -24,6 +24,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/google/uuid"
@@ -31,7 +32,7 @@ import (
 	msgraphsdk "github.com/microsoftgraph/msgraph-sdk-go"
 	"github.com/tdrn-org/go-httpserver"
 	"github.com/tdrn-org/pim-mcp/config"
-	"github.com/tdrn-org/pim-mcp/internal/adapters/middleware/mcp"
+	"github.com/tdrn-org/pim-mcp/internal/adapters/middleware/auth"
 	"github.com/tdrn-org/pim-mcp/internal/adapters/pim"
 	"github.com/tdrn-org/pim-mcp/internal/domain"
 	"github.com/tdrn-org/pim-mcp/internal/session/model"
@@ -46,8 +47,9 @@ type Runtime interface {
 	BaseURL() *url.URL
 	Logger() *slog.Logger
 	SessionCookie() *httpserver.CookieHandler
-	UpdateSessionCredentials(ctx context.Context, id string, credentials string) error
+	LookupSession(ctx context.Context, id string) (*model.Session, error)
 	LookupSessionByAPIKey(ctx context.Context, apiKey string) (*model.Session, error)
+	UpdateSessionCredentials(ctx context.Context, id string, credentials string) error
 }
 
 func UnmarshalToken(s string) (*oauth2.Token, error) {
@@ -82,8 +84,21 @@ func NewProvider(runtime Runtime, cfg *config.MSGraphConfig) *Provider {
 	}
 }
 
+func (p *Provider) requestContextWithSession(r *http.Request) context.Context {
+	ctx := r.Context()
+	id, ok := p.runtime.SessionCookie().Get(r)
+	if !ok {
+		return ctx
+	}
+	session, _ := p.runtime.LookupSession(r.Context(), id)
+	if session == nil {
+		return ctx
+	}
+	return auth.ContextWithSession(ctx, session)
+}
+
 func (p *Provider) accessTokenFromContext(ctx context.Context) (string, error) {
-	session := mcp.SessionFromContext(ctx)
+	session := auth.SessionFromContext(ctx)
 	if session == nil || session.Credentials == "" {
 		return "", fmt.Errorf("no session credentials available")
 	}
@@ -179,7 +194,8 @@ func (p *Provider) handleCallback(w http.ResponseWriter, r *http.Request) {
 }
 
 func (p *Provider) handleContacts(w http.ResponseWriter, r *http.Request) {
-	contacts, err := p.SearchContacts(r.Context(), domain.ContactFilter{})
+	ctx := p.requestContextWithSession(r)
+	contacts, err := p.SearchContacts(ctx, domain.ContactFilter{})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	} else if len(contacts) > 0 {
@@ -192,7 +208,8 @@ func (p *Provider) handleContacts(w http.ResponseWriter, r *http.Request) {
 }
 
 func (p *Provider) handleEmails(w http.ResponseWriter, r *http.Request) {
-	emails, err := p.SearchEmails(r.Context(), domain.EmailFilter{})
+	ctx := p.requestContextWithSession(r)
+	emails, err := p.SearchEmails(ctx, domain.EmailFilter{})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	} else if len(emails) > 0 {
@@ -205,7 +222,8 @@ func (p *Provider) handleEmails(w http.ResponseWriter, r *http.Request) {
 }
 
 func (p *Provider) handleEvents(w http.ResponseWriter, r *http.Request) {
-	events, err := p.SearchEvents(r.Context(), domain.EventFilter{})
+	ctx := p.requestContextWithSession(r)
+	events, err := p.SearchEvents(ctx, domain.EventFilter{})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	} else if len(events) > 0 {
@@ -218,7 +236,8 @@ func (p *Provider) handleEvents(w http.ResponseWriter, r *http.Request) {
 }
 
 func (p *Provider) handleTasks(w http.ResponseWriter, r *http.Request) {
-	tasks, err := p.SearchTasks(r.Context(), domain.TaskFilter{})
+	ctx := p.requestContextWithSession(r)
+	tasks, err := p.SearchTasks(ctx, domain.TaskFilter{})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	} else if len(tasks) > 0 {
@@ -264,6 +283,7 @@ func (p *Provider) CheckCredentials(credentials string) (*pim.CredentialInfo, er
 	}
 	token, err := UnmarshalToken(credentials)
 	if err != nil {
+		p.runtime.Logger().Warn("ignoring invalid credentials", slog.Any("err", err))
 		return info, nil
 	}
 	info.Valid = token.Valid()
@@ -271,6 +291,27 @@ func (p *Provider) CheckCredentials(credentials string) (*pim.CredentialInfo, er
 	return info, nil
 }
 
-func (p *Provider) RefreshCredentials(credentials string) (string, error) {
-	return credentials, nil
+func (p *Provider) RefreshCredentials(ctx context.Context, credentials string, due time.Time) (string, error) {
+	if credentials == "" {
+		return credentials, nil
+	}
+	token, err := UnmarshalToken(credentials)
+	if err != nil {
+		p.runtime.Logger().Warn("discarding invalid credentials", slog.Any("err", err))
+		return "", nil
+	}
+	if token.Expiry.After(due) {
+		return credentials, nil
+	}
+	token, err = p.oauth2Config().TokenSource(ctx, token).Token()
+	if err != nil {
+		p.runtime.Logger().Warn("failed to refresh credentials", slog.Any("err", err))
+		return "", nil
+	}
+	refreshedCredentials, err := MarshalToken(token)
+	if err != nil {
+		p.runtime.Logger().Warn("failed to marshal refreshed credentials", slog.Any("err", err))
+		return "", nil
+	}
+	return refreshedCredentials, nil
 }

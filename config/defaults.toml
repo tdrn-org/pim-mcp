@@ -20,6 +20,7 @@ trusted_headers = [ ]
 allowed_origins = [ ]
 access_log = ""
 access_log_size_limit = 0
+session_cookie_name = "pim-mcp-session"
 
 [store]
 type = "memory"

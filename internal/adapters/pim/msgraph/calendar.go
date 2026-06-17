@@ -64,10 +64,19 @@ func (p *Provider) GetEvent(ctx context.Context, id string) (*domain.Event, erro
 }
 
 func (p *Provider) eventFromResponse(model models.Eventable) *domain.Event {
+	sensitivity := model.GetSensitivity()
+	if sensitivity != nil && *sensitivity != models.NORMAL_SENSITIVITY && *sensitivity != models.PERSONAL_SENSITIVITY {
+		return &domain.Event{}
+	}
+	body := model.GetBody()
+	content := ""
+	if body != nil {
+		content = *body.GetContent()
+	}
 	return &domain.Event{
 		ID:          ptrString(model.GetId()),
 		Title:       ptrString(model.GetSubject()),
-		Description: ptrString(model.GetBodyPreview()),
+		Description: content,
 		Start:       p.tzTimeFromResponse(model.GetStart()),
 		End:         p.tzTimeFromResponse(model.GetEnd()),
 		Location:    ptrString(model.GetLocation().GetDisplayName()),
@@ -121,6 +130,7 @@ func (p *Provider) eventFilterRequestConfig(filter domain.EventFilter) *users.It
 	}
 	headers := &kiota.RequestHeaders{}
 	headers.Add("ConsistencyLevel", "eventual")
+	headers.Add("Prefer", "outlook.body-content-type=\"text\"")
 	requestConfig := &users.ItemCalendarViewRequestBuilderGetRequestConfiguration{
 		QueryParameters: &users.ItemCalendarViewRequestBuilderGetQueryParameters{
 			Search:        search,

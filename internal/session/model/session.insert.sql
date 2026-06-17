@@ -4,7 +4,7 @@ INSERT INTO
         api_key,
         api_key_shown,
         credentials,
-        last_access
+        last_update
     )
 VALUES(
     $1,

@@ -80,6 +80,22 @@ func (s *Store) GetSession(ctx context.Context, id string) (*model.Session, erro
 	return session, nil
 }
 
+func (s *Store) GetSessions(ctx context.Context) ([]*model.Session, error) {
+	return model.SelectSessions(ctx, s.driver)
+}
+
+func (s *Store) LookupSession(ctx context.Context, id string) (*model.Session, error) {
+	return model.SelectSession(ctx, s.driver, id)
+}
+
+func (s *Store) LookupSessionByAPIKey(ctx context.Context, apiKey string) (*model.Session, error) {
+	return model.SelectSessionByAPIKey(ctx, s.driver, apiKey)
+}
+
+func (s *Store) DeleteSession(ctx context.Context, id string) error {
+	return model.DeleteSession(ctx, s.driver, id)
+}
+
 func (s *Store) UpdateSessionCredentials(ctx context.Context, id string, credentials string) error {
 	txCtx, tx, err := s.driver.BeginTx(ctx)
 	if err != nil {
@@ -95,7 +111,6 @@ func (s *Store) UpdateSessionCredentials(ctx context.Context, id string, credent
 		return fmt.Errorf("unknown session id '%s'", id)
 	}
 	session.Credentials = credentials
-	session.LastAccess = database.Now()
 	err = session.Update(txCtx)
 	if err != nil {
 		return err
@@ -106,45 +121,4 @@ func (s *Store) UpdateSessionCredentials(ctx context.Context, id string, credent
 		return err
 	}
 	return nil
-}
-
-func (s *Store) LookupSessionByAPIKey(ctx context.Context, apiKey string) (*model.Session, error) {
-	txCtx, tx, err := s.driver.BeginTx(ctx)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.RollbackUncommitedTx(txCtx)
-
-	session, err := model.SelectSessionByAPIKey(txCtx, s.driver, apiKey)
-	if err != nil {
-		return nil, err
-	}
-
-	err = tx.CommitTx(txCtx)
-	if err != nil {
-		return nil, err
-	}
-	return session, nil
-}
-
-func (s *Store) DeleteSession(ctx context.Context, id string) error {
-	txCtx, tx, err := s.driver.BeginTx(ctx)
-	if err != nil {
-		return err
-	}
-	defer tx.RollbackUncommitedTx(txCtx)
-
-	session, err := model.SelectSession(txCtx, s.driver, id)
-	if err != nil {
-		return err
-	}
-	if session == nil {
-		return fmt.Errorf("unknown session id '%s'", id)
-	}
-	err = session.Delete(txCtx)
-	if err != nil {
-		return err
-	}
-
-	return tx.CommitTx(txCtx)
 }

@@ -14,26 +14,23 @@
  * limitations under the License.
  */
 
-package pim
+package auth
 
 import (
 	"context"
-	"net/url"
-	"time"
 
-	"github.com/tdrn-org/go-httpserver"
-	"github.com/tdrn-org/pim-mcp/internal/domain"
+	"github.com/tdrn-org/pim-mcp/internal/session/model"
 )
 
-type Provider interface {
-	domain.Provider
-	Mount(server *httpserver.Instance)
-	LoginURL() *url.URL
-	CheckCredentials(credentials string) (*CredentialInfo, error)
-	RefreshCredentials(ctx context.Context, credentials string, due time.Time) (string, error)
+type contextKey string
+
+const sessionContextKey contextKey = "session"
+
+func SessionFromContext(ctx context.Context) *model.Session {
+	session, _ := ctx.Value(sessionContextKey).(*model.Session)
+	return session
 }
 
-type CredentialInfo struct {
-	Valid  bool
-	Expiry time.Time
+func ContextWithSession(ctx context.Context, session *model.Session) context.Context {
+	return context.WithValue(ctx, sessionContextKey, session)
 }

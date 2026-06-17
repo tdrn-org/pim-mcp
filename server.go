@@ -55,8 +55,7 @@ type Server struct {
 	jobTicker           *time.Ticker
 	jobTickerShutdown   chan any
 	jobTickerShutdownWG sync.WaitGroup
-
-	logger *slog.Logger
+	logger              *slog.Logger
 }
 
 func StartServer(ctx context.Context, cfg *config.Config) (*Server, error) {
@@ -181,7 +180,7 @@ func (s *Server) startHttpServer(ctx context.Context, cfg *config.Config) error 
 		s.baseURL = httpServer.BaseURL()
 	}
 	s.sessionCookie = &httpserver.CookieHandler{
-		Name:   "pim-mcp-session",
+		Name:   cfg.Server.SessionCookieName,
 		Path:   "/",
 		Secure: s.baseURL.Scheme == "https",
 	}
@@ -262,7 +261,29 @@ func (s *Server) shutdownJobTicker(_ context.Context) error {
 }
 
 func (s *Server) runJobs() {
-
+	ctx := context.Background()
+	sessions, err := s.store.GetSessions(ctx)
+	if err != nil {
+		s.logger.Error("failed to select sessions", slog.Any("err", err))
+		return
+	}
+	due := time.Now().Add(serverJobTickerSchedule - time.Minute)
+	for _, session := range sessions {
+		if session.Credentials != "" {
+			credentials, err := s.provider.RefreshCredentials(ctx, session.Credentials, due)
+			if err == nil {
+				if session.Credentials != credentials {
+					session.Credentials = credentials
+					err = session.Update(ctx)
+					if err != nil {
+						s.logger.Error("failed update session credentials", slog.Any("err", err))
+					}
+				}
+			} else {
+				s.logger.Error("failed refresh session credentials", slog.Any("err", err))
+			}
+		}
+	}
 }
 
 type serverRuntime struct {
@@ -298,8 +319,8 @@ func (runtime *serverRuntime) GetSession(ctx context.Context, id string) (*model
 	return runtime.server.store.GetSession(ctx, id)
 }
 
-func (runtime *serverRuntime) UpdateSessionCredentials(ctx context.Context, id string, credentials string) error {
-	return runtime.server.store.UpdateSessionCredentials(ctx, id, credentials)
+func (runtime *serverRuntime) LookupSession(ctx context.Context, id string) (*model.Session, error) {
+	return runtime.server.store.LookupSession(ctx, id)
 }
 
 func (runtime *serverRuntime) LookupSessionByAPIKey(ctx context.Context, apiKey string) (*model.Session, error) {
@@ -308,6 +329,10 @@ func (runtime *serverRuntime) LookupSessionByAPIKey(ctx context.Context, apiKey 
 
 func (runtime *serverRuntime) DeleteSession(ctx context.Context, id string) error {
 	return runtime.server.store.DeleteSession(ctx, id)
+}
+
+func (runtime *serverRuntime) UpdateSessionCredentials(ctx context.Context, id string, credentials string) error {
+	return runtime.server.store.UpdateSessionCredentials(ctx, id, credentials)
 }
 
 func (runtime *serverRuntime) LoginURL(ctx context.Context) (*url.URL, error) {
