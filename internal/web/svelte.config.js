@@ -8,10 +8,20 @@ const config = {
 		adapter: adapter({
 			pages: 'build',
 			assets: 'build',
-			fallback: 'index.html',
+			fallback: 'spa.html',
 			precompress: false,
 			strict: true
 		}),
+		prerender: {
+			handleHttpError: ({ status, path, referrer }) => {
+				// Ignore missing favicon and other non-critical 404s during prerender
+				if (status === 404) {
+					console.warn(`[prerender] 404 ${path} (linked from ${referrer}) — ignored`);
+					return;
+				}
+				throw new Error(`${status} ${path} (linked from ${referrer})`);
+			}
+		},
 		appDir: '_app'
 	}
 };
