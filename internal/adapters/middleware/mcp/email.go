@@ -80,6 +80,10 @@ type GetEmailParams struct {
 	ID string `json:"id" jsonschema:"ID of the email to return."`
 }
 
+type SearchEmailOutput struct {
+	Emails []*EmailSummaryOutput `json:"emails"`
+}
+
 type EmailSummaryOutput struct {
 	ID         string                    `json:"id" jsonschema:"ID of the email."`
 	Subject    string                    `json:"subject" jsonschema:"The subject of the email"`
@@ -104,7 +108,7 @@ type EmailOutput struct {
 	ThreadID   string                    `json:"thread_id" jsonschema:"The thread ID of the email"`
 }
 
-func toEmailSummaryOutputs(emails []*domain.Email) []*EmailSummaryOutput {
+func toEmailSummaryOutputs(emails []*domain.Email) *SearchEmailOutput {
 	outputs := make([]*EmailSummaryOutput, 0, len(emails))
 	for _, email := range emails {
 		output := &EmailSummaryOutput{
@@ -119,7 +123,7 @@ func toEmailSummaryOutputs(emails []*domain.Email) []*EmailSummaryOutput {
 		}
 		outputs = append(outputs, output)
 	}
-	return outputs
+	return &SearchEmailOutput{Emails: outputs}
 }
 
 func toEmailOutput(email *domain.Email) *EmailOutput {
