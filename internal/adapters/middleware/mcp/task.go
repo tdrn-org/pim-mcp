@@ -80,6 +80,10 @@ type GetTaskParams struct {
 	ID string `json:"id" jsonschema:"ID of the task to return."`
 }
 
+type SearchTasksOutput struct {
+	Tasks []*TaskSummaryOutput `json:"tasks"`
+}
+
 type TaskSummaryOutput struct {
 	ID       string        `json:"id" jsonschema:"ID of the task."`
 	Title    string        `json:"title" jsonschema:"The title of the task"`
@@ -100,7 +104,7 @@ type TaskOutput struct {
 	UpdatedAt   time.Time     `json:"updated_at" jsonschema:"The last time the task was updated (RFC3339 format)."`
 }
 
-func toTaskSummaryOutputs(tasks []*domain.Task) []*TaskSummaryOutput {
+func toTaskSummaryOutputs(tasks []*domain.Task) *SearchTasksOutput {
 	outputs := make([]*TaskSummaryOutput, 0, len(tasks))
 	for _, task := range tasks {
 		output := &TaskSummaryOutput{
@@ -112,7 +116,7 @@ func toTaskSummaryOutputs(tasks []*domain.Task) []*TaskSummaryOutput {
 		}
 		outputs = append(outputs, output)
 	}
-	return outputs
+	return &SearchTasksOutput{Tasks: outputs}
 }
 
 func toTaskOutput(task *domain.Task) *TaskOutput {

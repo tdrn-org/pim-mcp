@@ -78,6 +78,10 @@ type GetEventParams struct {
 	ID string `json:"id" jsonschema:"ID of the event to return."`
 }
 
+type SearchEventsOutput struct {
+	Events []*EventSummaryOutput `json:"events"`
+}
+
 type EventSummaryOutput struct {
 	ID       string       `json:"id" jsonschema:"ID of the event."`
 	Title    string       `json:"title" jsonschema:"The title of the event"`
@@ -101,7 +105,7 @@ type EventOutput struct {
 	UpdatedAt   time.Time                 `json:"updated_at" jsonschema:"The last time the event was updated (RFC3339 format)."`
 }
 
-func toEventSummaryOutputs(events []*domain.Event) []*EventSummaryOutput {
+func toEventSummaryOutputs(events []*domain.Event) *SearchEventsOutput {
 	outputs := make([]*EventSummaryOutput, 0, len(events))
 	for _, event := range events {
 		output := &EventSummaryOutput{
@@ -114,7 +118,7 @@ func toEventSummaryOutputs(events []*domain.Event) []*EventSummaryOutput {
 		}
 		outputs = append(outputs, output)
 	}
-	return outputs
+	return &SearchEventsOutput{Events: outputs}
 }
 
 func toEventOutput(event *domain.Event) *EventOutput {

@@ -76,6 +76,10 @@ type GetContactParams struct {
 	ID string `json:"id" jsonschema:"ID of the contact to return."`
 }
 
+type SearchContactsOutput struct {
+	Contacts []*ContactSummaryOutput `json:"contacts"`
+}
+
 type ContactSummaryOutput struct {
 	ID          string               `json:"id" jsonschema:"ID of the contact."`
 	DisplayName string               `json:"display_name" jsonschema:"The display name of the contact."`
@@ -116,7 +120,7 @@ type PostalAddressOutput struct {
 	Nature     string `json:"nature" jsonschema:"The nature of the postal address (Home, Business, Other)."`
 }
 
-func toContactSummaryOutputs(contacts []*domain.Contact) []*ContactSummaryOutput {
+func toContactSummaryOutputs(contacts []*domain.Contact) *SearchContactsOutput {
 	outputs := make([]*ContactSummaryOutput, 0, len(contacts))
 	for _, contact := range contacts {
 		output := &ContactSummaryOutput{
@@ -129,7 +133,7 @@ func toContactSummaryOutputs(contacts []*domain.Contact) []*ContactSummaryOutput
 		}
 		outputs = append(outputs, output)
 	}
-	return outputs
+	return &SearchContactsOutput{Contacts: outputs}
 }
 
 func toContactOutput(contact *domain.Contact) *ContactOutput {
