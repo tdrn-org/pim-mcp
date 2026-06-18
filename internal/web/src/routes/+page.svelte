@@ -46,8 +46,8 @@
 				<code class="ml-1 rounded bg-slate-800 px-2 py-0.5 text-xs text-brand-300 font-mono">X-API-Key: pim_mcp_...</code>
 			</p>
 			<p class="text-sm text-slate-300">
-				<span class="text-slate-500">API key available at:</span>
-				<code class="ml-1 rounded bg-slate-800 px-2 py-0.5 text-xs text-brand-300 font-mono">GET /api/v1/session</code>
+				<span class="text-slate-500">API key:</span>
+				<span class="ml-1 text-xs text-slate-400">provided by user</span>
 			</p>
 			<p class="text-sm text-slate-500 leading-relaxed mt-2">
 				Use <code class="text-xs text-slate-400">tools/list</code> to discover email, calendar,

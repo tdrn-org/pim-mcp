@@ -1,7 +1,6 @@
 // Mirror of Go rest.SessionInfo, rest.CredentialInfo, rest.loginRequest structs
 export interface CredentialInfo {
 	valid: boolean;
-	expiry: string; // ISO 8601 timestamp
 }
 
 export interface SessionInfo {

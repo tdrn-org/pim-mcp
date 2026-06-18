@@ -60,18 +60,6 @@
 		loadSession();
 	}
 
-	function formatExpiry(iso: string): string {
-		if (!iso || iso === '0001-01-01T00:00:00Z') return 'N/A';
-		const d = new Date(iso);
-		return d.toLocaleDateString('en-US', {
-			year: 'numeric',
-			month: 'short',
-			day: 'numeric',
-			hour: '2-digit',
-			minute: '2-digit'
-		});
-	}
-
 	$effect(() => {
 		loadSession();
 	});
@@ -121,12 +109,6 @@
 					<span class="text-slate-400">Credentials</span>
 					<span class="rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-xs font-medium text-emerald-400">Valid</span>
 				</div>
-				{#if session.credentials.expiry && session.credentials.expiry !== '0001-01-01T00:00:00Z'}
-					<div class="mt-2 flex items-center justify-between text-sm">
-						<span class="text-slate-500">Expires</span>
-						<span class="text-slate-300">{formatExpiry(session.credentials.expiry)}</span>
-					</div>
-				{/if}
 			</div>
 
 			<div class="flex gap-3 mt-2">
