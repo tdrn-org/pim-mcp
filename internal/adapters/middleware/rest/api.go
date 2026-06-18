@@ -202,21 +202,8 @@ func (api *API) LoginPost(w http.ResponseWriter, r *http.Request) {
 			api.sendPlainTextResponse(w, r, http.StatusUnauthorized, "invalid api_key")
 			return
 		}
-		provider := api.runtime.Provider()
-		credenitalInfo, err := provider.CheckCredentials(session.Credentials)
-		if err != nil {
-			api.sendError(w, r, http.StatusInternalServerError, err)
-			return
-		}
-		sessionInfo := &SessionInfo{
-			ProviderName: provider.Name(),
-			Credentials: CredentialInfo{
-				Valid:  credenitalInfo.Valid,
-				Expiry: credenitalInfo.Expiry,
-			},
-		}
 		api.runtime.SessionCookie().Set(w, session.ID, false)
-		api.sendApplicationJSONResponse(w, r, http.StatusOK, sessionInfo)
+		http.Redirect(w, r, api.runtime.BaseURL().JoinPath("/session").String(), http.StatusFound)
 		return
 	}
 
