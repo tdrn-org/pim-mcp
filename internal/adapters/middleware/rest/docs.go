@@ -141,9 +141,6 @@ const docTemplate = `{
         "rest.CredentialInfo": {
             "type": "object",
             "properties": {
-                "expiry": {
-                    "type": "string"
-                },
                 "valid": {
                     "type": "boolean"
                 }

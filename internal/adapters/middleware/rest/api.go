@@ -22,7 +22,6 @@ import (
 	"log/slog"
 	"net/http"
 	"net/url"
-	"time"
 
 	"github.com/tdrn-org/go-httpserver"
 	"github.com/tdrn-org/pim-mcp/internal/adapters/pim"
@@ -48,8 +47,7 @@ type SessionInfo struct {
 }
 
 type CredentialInfo struct {
-	Valid  bool      `json:"valid"`
-	Expiry time.Time `json:"expiry"`
+	Valid bool `json:"valid"`
 }
 
 type loginRequest struct {
@@ -130,7 +128,7 @@ func (api *API) SessionGet(w http.ResponseWriter, r *http.Request) {
 		apiKey = session.APIKey
 	}
 	provider := api.runtime.Provider()
-	credenitalInfo, err := provider.CheckCredentials(session.Credentials)
+	credentialInfo, err := provider.CheckCredentials(r.Context(), session.Credentials)
 	if err != nil {
 		api.sendError(w, r, http.StatusInternalServerError, err)
 		return
@@ -139,8 +137,7 @@ func (api *API) SessionGet(w http.ResponseWriter, r *http.Request) {
 		ProviderName: api.runtime.Provider().Name(),
 		APIKey:       apiKey,
 		Credentials: CredentialInfo{
-			Valid:  credenitalInfo.Valid,
-			Expiry: credenitalInfo.Expiry,
+			Valid: credentialInfo.Valid,
 		},
 	}
 	api.runtime.SessionCookie().Set(w, session.ID, false)

@@ -2,8 +2,6 @@ basePath: /api/v1
 definitions:
   rest.CredentialInfo:
     properties:
-      expiry:
-        type: string
       valid:
         type: boolean
     type: object

@@ -20,7 +20,6 @@ import (
 	"context"
 	"log/slog"
 	"net/url"
-	"time"
 
 	"github.com/google/uuid"
 	"github.com/tdrn-org/go-httpserver"
@@ -66,11 +65,11 @@ func (p *Provider) LoginURL() *url.URL {
 	return p.runtime.BaseURL()
 }
 
-func (p *Provider) CheckCredentials(credentials string) (*pim.CredentialInfo, error) {
+func (p *Provider) CheckCredentials(ctx context.Context, credentials string) (*pim.CredentialInfo, error) {
 	info := &pim.CredentialInfo{}
 	return info, nil
 }
 
-func (p *Provider) RefreshCredentials(ctx context.Context, credentials string, due time.Time) (string, error) {
+func (p *Provider) RefreshCredentials(ctx context.Context, credentials string) (string, error) {
 	return credentials, nil
 }

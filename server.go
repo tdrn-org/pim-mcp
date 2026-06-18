@@ -205,14 +205,20 @@ func (s *Server) closeHttpServer() error {
 
 func (s *Server) startMCPServer(ctx context.Context, cfg *config.Config) error {
 	runtime := &serverRuntime{server: s}
+	var provider pim.Provider
+	var err error
 	switch cfg.Provider.Adapter {
 	case config.ProviderAdapterDemo:
-		s.provider = demo.NewProvider(runtime)
+		provider = demo.NewProvider(runtime)
 	case config.ProviderAdapterMSGraph:
-		s.provider = msgraph.NewProvider(runtime, &cfg.Provider.MSGraph)
+		provider, err = msgraph.NewProvider(runtime, &cfg.Provider.MSGraph)
 	default:
 		return fmt.Errorf("unrecognized provider adapter '%s'", cfg.Provider.Adapter)
 	}
+	if err != nil {
+		return err
+	}
+	s.provider = provider
 	s.provider.Mount(s.httpServer)
 	handler := mcp.NewHandler(runtime, s.provider)
 	s.httpServer.Handle("/mcp", handler)
@@ -267,10 +273,9 @@ func (s *Server) runJobs() {
 		s.logger.Error("failed to select sessions", slog.Any("err", err))
 		return
 	}
-	due := time.Now().Add(serverJobTickerSchedule - time.Minute)
 	for _, session := range sessions {
 		if session.Credentials != "" {
-			credentials, err := s.provider.RefreshCredentials(ctx, session.Credentials, due)
+			credentials, err := s.provider.RefreshCredentials(ctx, session.Credentials)
 			if err == nil {
 				if session.Credentials != credentials {
 					session.Credentials = credentials
