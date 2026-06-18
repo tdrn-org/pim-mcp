@@ -346,6 +346,7 @@ func (runtime *serverRuntime) LoginURL(ctx context.Context) (*url.URL, error) {
 
 // handleLanding serves the landing page at GET /.
 // If a valid session cookie exists, redirects to /session.
+// If a stale cookie exists (no matching session), deletes it and serves the landing page.
 // Otherwise, serves the prerendered landing page (pure HTML, no JS).
 func (s *Server) handleLanding(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Path != "/" {
@@ -355,11 +356,13 @@ func (s *Server) handleLanding(w http.ResponseWriter, r *http.Request) {
 	// Check for existing session cookie
 	id, ok := s.sessionCookie.Get(r)
 	if ok {
-		session, err := s.store.GetSession(r.Context(), id)
+		session, err := s.store.LookupSession(r.Context(), id)
 		if err == nil && session != nil {
 			http.Redirect(w, r, "/session", http.StatusFound)
 			return
 		}
+		// Stale cookie — delete it
+		s.sessionCookie.Delete(w)
 	}
 	// No session — serve the prerendered landing page
 	web.Handler().ServeHTTP(w, r)

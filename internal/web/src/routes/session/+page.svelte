@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { getSession, deleteSession, loginWithAPIKey, loginOAuth2 } from '$lib/api';
+	import { getSession, deleteSession, loginOAuth2 } from '$lib/api';
 	import type { SessionInfo } from '$lib/types';
 	import ApiKeyModal from '$lib/ApiKeyModal.svelte';
 
@@ -7,9 +7,6 @@
 	let error = $state<string | null>(null);
 	let loading = $state(true);
 	let showApiKeyModal = $state(false);
-	let apiKeyInput = $state('');
-	let loginError = $state<string | null>(null);
-	let loginLoading = $state(false);
 
 	async function loadSession() {
 		loading = true;
@@ -21,6 +18,11 @@
 				showApiKeyModal = true;
 			}
 		} catch (e) {
+			// 401 = no session → redirect to landing page
+			if (e instanceof Error && e.message.includes('401')) {
+				window.location.href = '/';
+				return;
+			}
 			error = e instanceof Error ? e.message : 'Unknown error';
 		} finally {
 			loading = false;
@@ -30,7 +32,8 @@
 	async function handleLogout() {
 		try {
 			await deleteSession();
-			await loadSession();
+			// Redirect to landing page — cookie is deleted, no new session created
+			window.location.href = '/';
 		} catch (e) {
 			error = e instanceof Error ? e.message : 'Logout failed';
 		}
@@ -38,20 +41,6 @@
 
 	function handleOAuth2Login() {
 		loginOAuth2();
-	}
-
-	async function handleAPIKeyLogin() {
-		if (!apiKeyInput.trim()) return;
-		loginLoading = true;
-		loginError = null;
-		try {
-			session = await loginWithAPIKey(apiKeyInput.trim());
-			apiKeyInput = '';
-		} catch (e) {
-			loginError = e instanceof Error ? e.message : 'Login failed';
-		} finally {
-			loginLoading = false;
-		}
 	}
 
 	function handleApiKeyDismiss() {
@@ -139,40 +128,6 @@
 			>
 				Connect to Provider
 			</button>
-
-			<!-- Divider -->
-			<div class="flex w-full items-center gap-3">
-				<div class="h-px flex-1 bg-slate-700"></div>
-				<span class="text-xs text-slate-500">or use API key</span>
-				<div class="h-px flex-1 bg-slate-700"></div>
-			</div>
-
-			<!-- API Key Login -->
-			<div class="w-full space-y-3">
-				<div class="flex gap-2">
-					<input
-						type="text"
-						bind:value={apiKeyInput}
-						placeholder="pim_mcp_..."
-						class="flex-1 rounded-lg border border-slate-700 bg-slate-900 px-4 py-2.5 text-sm text-slate-200 placeholder-slate-500 outline-none transition-colors focus:border-brand-500"
-						onkeydown={(e) => { if (e.key === 'Enter') handleAPIKeyLogin(); }}
-					/>
-					<button
-						onclick={handleAPIKeyLogin}
-						disabled={loginLoading || !apiKeyInput.trim()}
-						class="rounded-lg bg-slate-700 px-4 py-2.5 text-sm text-slate-200 transition-colors hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed"
-					>
-						{#if loginLoading}
-							<div class="h-4 w-4 animate-spin rounded-full border-2 border-slate-400 border-t-white"></div>
-						{:else}
-							Login
-						{/if}
-					</button>
-				</div>
-				{#if loginError}
-					<p class="text-sm text-red-400">{loginError}</p>
-				{/if}
-			</div>
 		</div>
 	{/if}
 </div>

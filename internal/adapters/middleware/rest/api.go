@@ -35,6 +35,7 @@ type Runtime interface {
 	Ping(ctx context.Context) error
 	SessionCookie() *httpserver.CookieHandler
 	GetSession(ctx context.Context, id string) (*model.Session, error)
+	LookupSession(ctx context.Context, id string) (*model.Session, error)
 	LookupSessionByAPIKey(ctx context.Context, apiKey string) (*model.Session, error)
 	DeleteSession(ctx context.Context, id string) error
 	LoginURL(ctx context.Context) (*url.URL, error)
@@ -111,16 +112,21 @@ func (api *API) PingGet(w http.ResponseWriter, r *http.Request) {
 // GET @BasePath/session
 //
 //	@Summary		Get the user session
-//	@Description	Get the session for the current user
+//	@Description	Get the session for the current user. Returns 401 if no valid session exists.
 //	@Produce		json
 //	@Success		200	{object}	SessionInfo
+//	@Failure		401	{string}	string	"no session"
 //	@Failure		500	{string}	string	"server error"
 //	@Router			/api/v1/session [get]
 func (api *API) SessionGet(w http.ResponseWriter, r *http.Request) {
 	id, _ := api.runtime.SessionCookie().Get(r)
-	session, err := api.runtime.GetSession(r.Context(), id)
+	session, err := api.runtime.LookupSession(r.Context(), id)
 	if err != nil {
 		api.sendError(w, r, http.StatusInternalServerError, err)
+		return
+	}
+	if session == nil {
+		api.sendPlainTextResponse(w, r, http.StatusUnauthorized, "no session")
 		return
 	}
 	apiKey := ""
@@ -169,7 +175,7 @@ func (api *API) SessionDelete(w http.ResponseWriter, r *http.Request) {
 // POST @BasePath/login
 //
 //	@Summary		Initiate PIM provider login
-//	@Description	Initiate PIM provider login for the current user. Optionally provide an api_key for session recovery.
+//	@Description	Initiate PIM provider login. Without body: creates a new session and redirects to OAuth2. With api_key: recovers existing session.
 //	@Accept			json
 //	@Produce		json
 //	@Param			body	body		loginRequest	false	"optional api_key for session recovery"
@@ -179,11 +185,14 @@ func (api *API) SessionDelete(w http.ResponseWriter, r *http.Request) {
 //	@Failure		500		{string}	string	"server error"
 //	@Router			/api/v1/login [post]
 func (api *API) LoginPost(w http.ResponseWriter, r *http.Request) {
-	// Try to parse optional api_key from JSON body
+	// Parse form-encoded or JSON body for optional api_key
 	var req loginRequest
-	if r.Body != nil && r.ContentLength > 0 {
+	if err := r.ParseForm(); err == nil {
+		req.APIKey = r.FormValue("api_key")
+	}
+	if req.APIKey == "" && r.Body != nil && r.ContentLength > 0 {
+		// Try JSON body as fallback
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			// If body can't be parsed, fall through to OAuth2 redirect
 			req.APIKey = ""
 		}
 	}
@@ -204,7 +213,13 @@ func (api *API) LoginPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// No API key — standard OAuth2 flow
+	// No API key — create new session, then OAuth2 redirect
+	session, err := api.runtime.GetSession(r.Context(), "")
+	if err != nil {
+		api.sendError(w, r, http.StatusInternalServerError, err)
+		return
+	}
+	api.runtime.SessionCookie().Set(w, session.ID, false)
 	loginURL, err := api.runtime.LoginURL(r.Context())
 	if err != nil {
 		api.sendError(w, r, http.StatusInternalServerError, err)

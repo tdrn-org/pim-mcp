@@ -1,5 +1,26 @@
 <script lang="ts">
-	// No client-side JS needed — csr = false strips this block at build time.
+	import { loginWithAPIKey, loginOAuth2 } from '$lib/api';
+
+	let apiKeyInput = $state('');
+	let loginError = $state<string | null>(null);
+	let loginLoading = $state(false);
+
+	async function handleAPIKeyLogin() {
+		if (!apiKeyInput.trim()) return;
+		loginLoading = true;
+		loginError = null;
+		try {
+			await loginWithAPIKey(apiKeyInput.trim());
+			// loginWithAPIKey submits a form that follows the 302 redirect to /session
+		} catch (e) {
+			loginError = e instanceof Error ? e.message : 'Login failed';
+			loginLoading = false;
+		}
+	}
+
+	function handleOAuth2Login() {
+		loginOAuth2();
+	}
 </script>
 
 <div class="flex min-h-screen items-center justify-center bg-slate-950 p-6">
@@ -20,13 +41,47 @@
 			calendar, tasks, and contacts.
 		</p>
 
-		<!-- Human CTA -->
-		<a
-			href="/session"
-			class="rounded-lg bg-brand-500 px-8 py-3 text-base font-medium text-white hover:bg-brand-600 transition-colors shadow-lg shadow-brand-500/20"
+		<!-- Human CTA: OAuth2 -->
+		<button
+			onclick={handleOAuth2Login}
+			class="w-full rounded-lg bg-brand-500 px-6 py-3 text-sm font-medium text-white hover:bg-brand-600 transition-colors shadow-lg shadow-brand-500/20"
 		>
-			Open Session
-		</a>
+			Connect to Provider
+		</button>
+
+		<!-- Divider -->
+		<div class="flex w-full items-center gap-3">
+			<div class="h-px flex-1 bg-slate-700"></div>
+			<span class="text-xs text-slate-500">or use API key</span>
+			<div class="h-px flex-1 bg-slate-700"></div>
+		</div>
+
+		<!-- API Key Login -->
+		<div class="w-full space-y-3">
+			<div class="flex gap-2">
+				<input
+					type="text"
+					bind:value={apiKeyInput}
+					placeholder="pim_mcp_..."
+					class="flex-1 rounded-lg border border-slate-700 bg-slate-900 px-4 py-2.5 text-sm text-slate-200 placeholder-slate-500 outline-none transition-colors focus:border-brand-500"
+					onkeydown={(e) => { if (e.key === 'Enter') handleAPIKeyLogin(); }}
+				/>
+				<button
+					onclick={handleAPIKeyLogin}
+					disabled={loginLoading || !apiKeyInput.trim()}
+					class="rounded-lg bg-slate-700 px-4 py-2.5 text-sm text-slate-200 transition-colors hover:bg-slate-600 disabled:opacity-50 disabled:cursor-not-allowed"
+				>
+					{#if loginLoading}
+						<div class="h-4 w-4 animate-spin rounded-full border-2 border-slate-400 border-t-white"></div>
+					{:else}
+						Login
+					{/if}
+				</button>
+			</div>
+			{#if loginError}
+				<p class="text-sm text-red-400">{loginError}</p>
+			{/if}
+		</div>
 
 		<!-- Divider -->
 		<div class="flex w-full items-center gap-3">
