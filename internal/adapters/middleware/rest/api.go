@@ -218,7 +218,17 @@ func (api *API) LoginPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// No API key — create new session, then OAuth2 redirect
+	// No API key — check for existing session first, then OAuth2
+	id, _ := api.runtime.SessionCookie().Get(r)
+	if id != "" {
+		session, err := api.runtime.LookupSession(r.Context(), id)
+		if err == nil && session != nil {
+			// Existing session — redirect to /session
+			http.Redirect(w, r, api.runtime.BaseURL().JoinPath("/session").String(), http.StatusFound)
+			return
+		}
+	}
+	// No existing session — create new one, then OAuth2 redirect
 	session, err := api.runtime.GetSession(r.Context(), "")
 	if err != nil {
 		api.sendError(w, r, http.StatusInternalServerError, err)
