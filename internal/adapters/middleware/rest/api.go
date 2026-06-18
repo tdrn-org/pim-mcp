@@ -37,6 +37,7 @@ type Runtime interface {
 	GetSession(ctx context.Context, id string) (*model.Session, error)
 	LookupSession(ctx context.Context, id string) (*model.Session, error)
 	LookupSessionByAPIKey(ctx context.Context, apiKey string) (*model.Session, error)
+	UpdateSession(ctx context.Context, session *model.Session) error
 	DeleteSession(ctx context.Context, id string) error
 	LoginURL(ctx context.Context) (*url.URL, error)
 }
@@ -132,6 +133,10 @@ func (api *API) SessionGet(w http.ResponseWriter, r *http.Request) {
 	apiKey := ""
 	if !session.APIKeyShown {
 		apiKey = session.APIKey
+		session.APIKeyShown = true
+		if err := api.runtime.UpdateSession(r.Context(), session); err != nil {
+			api.runtime.Logger().Warn("failed to mark api key as shown", slog.Any("err", err))
+		}
 	}
 	provider := api.runtime.Provider()
 	credentialInfo, err := provider.CheckCredentials(r.Context(), session.Credentials)

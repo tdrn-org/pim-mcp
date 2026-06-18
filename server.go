@@ -332,6 +332,10 @@ func (runtime *serverRuntime) LookupSessionByAPIKey(ctx context.Context, apiKey 
 	return runtime.server.store.LookupSessionByAPIKey(ctx, apiKey)
 }
 
+func (runtime *serverRuntime) UpdateSession(ctx context.Context, session *model.Session) error {
+	return session.Update(ctx)
+}
+
 func (runtime *serverRuntime) DeleteSession(ctx context.Context, id string) error {
 	return runtime.server.store.DeleteSession(ctx, id)
 }
