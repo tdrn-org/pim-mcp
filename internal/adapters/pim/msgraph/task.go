@@ -90,10 +90,15 @@ func (p *Provider) defaultTaskListID(ctx context.Context, client *msgraphsdk.Gra
 }
 
 func (p *Provider) taskFromResponse(model models.TodoTaskable) *domain.Task {
+	body := model.GetBody()
+	content := ""
+	if body != nil {
+		content = *body.GetContent()
+	}
 	return &domain.Task{
 		ID:          ptrString(model.GetId()),
 		Title:       ptrString(model.GetTitle()),
-		Description: ptrString(model.GetBody().GetContent()),
+		Description: content,
 		Status:      p.taskStatusFromResponse(model),
 		Priority:    p.taskPriorityFromResponse(model),
 		DueAt:       p.taskDateTimeFromResponse(model.GetDueDateTime()),
@@ -162,14 +167,15 @@ func (p *Provider) taskFilterRequestConfig(filter domain.TaskFilter) *users.Item
 	filterParam := fmt.Sprintf("(dueDateTime/dateTime ge '%s') and (dueDateTime/dateTime le '%s')", dueAfter, dueBefore)
 	headers := &kiota.RequestHeaders{}
 	headers.Add("ConsistencyLevel", "eventual")
+	headers.Add("Prefer", "outlook.body-content-type=\"text\"")
 	requestConfig := &users.ItemTodoListsItemTasksRequestBuilderGetRequestConfiguration{
 		QueryParameters: &users.ItemTodoListsItemTasksRequestBuilderGetQueryParameters{
 			//			Search: search,
 			//			Filter: &filterParam,
-			//			Top: &limit,
+			//			Top: limit,
 			//			Count: boolPtr(true),
 		},
-		//		Headers: headers,
+		Headers: headers,
 	}
 	_ = limit
 	_ = search
