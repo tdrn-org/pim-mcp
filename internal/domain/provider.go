@@ -16,19 +16,32 @@
 
 package domain
 
+// AccessMode steuert, ob der Agent Schreib-Operationen nutzen darf.
+// ReadOnly = nur Search/Get. ReadWrite = zusätzlich einfache Schreib-Ops
+// (createTask, updateTask, createEvent ohne Teilnehmer, markAsRead).
+// Kein Delete, keine komplexen Operationen.
+type AccessMode string
+
+const (
+	ReadOnly  AccessMode = "read_only"
+	ReadWrite AccessMode = "read_write"
+)
+
 type ProviderCapabilities struct {
-	Email    bool
-	Calendar bool
-	Tasks    bool
-	Contacts bool
+	Email      bool
+	Calendar   bool
+	Tasks      bool
+	Contacts   bool
+	AccessMode AccessMode
 }
 
 func AllProviderCapabilities() ProviderCapabilities {
 	return ProviderCapabilities{
-		Email:    true,
-		Calendar: true,
-		Tasks:    true,
-		Contacts: true,
+		Email:      true,
+		Calendar:   true,
+		Tasks:      true,
+		Contacts:   true,
+		AccessMode: ReadWrite,
 	}
 }
 
