@@ -75,7 +75,37 @@ type TaskFilter struct {
 	DueBefore *time.Time
 }
 
+// TaskCreate beschreibt die Felder zum Anlegen eines neuen Tasks.
+// Title ist Pflicht, alle anderen Felder optional.
+type TaskCreate struct {
+	Title       string // Pflicht — jeder Task braucht einen Titel
+	Description *string
+	Status      *TaskStatus
+	Priority    *TaskPriority
+	DueAt       *TZTime
+}
+
+// TaskUpdate beschreibt, welche Felder eines Tasks geändert werden sollen.
+// Nur non-nil Felder werden angewandt (PATCH-Semantik).
+// DueAt mit zero DateTime (IsZero()==true) löscht das Fälligkeitsdatum.
+type TaskUpdate struct {
+	Title       *string
+	Description *string
+	Status      *TaskStatus
+	Priority    *TaskPriority
+	DueAt       *TZTime // nil = nicht anfassen; &TZTime{} = löschen; sonst setzen
+}
+
+// TaskProvider ist das Lese-Interface — alle Adapter implementieren es.
 type TaskProvider interface {
 	SearchTasks(ctx context.Context, filter TaskFilter) ([]*Task, error)
 	GetTask(ctx context.Context, id string) (*Task, error)
+}
+
+// TaskWriteProvider erweitert TaskProvider um Schreib-Operationen.
+// Wird nur registriert, wenn ProviderCapabilities.AccessMode == ReadWrite.
+type TaskWriteProvider interface {
+	TaskProvider
+	CreateTask(ctx context.Context, task TaskCreate) (*Task, error)
+	UpdateTask(ctx context.Context, id string, update TaskUpdate) (*Task, error)
 }
