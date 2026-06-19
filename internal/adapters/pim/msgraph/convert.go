@@ -21,13 +21,23 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/microsoftgraph/msgraph-sdk-go/models"
 	"github.com/tdrn-org/pim-mcp/internal/domain"
 )
 
 const dateTimeLayoutLong string = "2006-01-02T15:04:05.0000000"
 const dateTimeLayoutShort string = "2006-01-02T15:04:05"
 
-func ParseTZtime(dateTime, timezone *string, defaultLocation *time.Location) domain.TZTime {
+func marshalTZTime(tzTime domain.TZTime) (*string, *string) {
+	dateTime := tzTime.DateTime.Format(dateTimeLayoutLong)
+	timezone := tzTime.Timezone
+	if timezone == "" {
+		timezone = tzTime.DateTime.Location().String()
+	}
+	return &dateTime, &timezone
+}
+
+func unmarshalTZTime(dateTime, timezone *string, defaultLocation *time.Location) domain.TZTime {
 	location := defaultLocation
 	if timezone != nil && *timezone != "" {
 		timezoneLocation, err := time.LoadLocation(*timezone)
@@ -63,6 +73,21 @@ func stringPtr(s string) *string {
 
 func boolPtr(b bool) *bool {
 	value := b
+	return &value
+}
+
+func bodyTypePtr(bt models.BodyType) *models.BodyType {
+	value := bt
+	return &value
+}
+
+func taskStatusPtr(ts models.TaskStatus) *models.TaskStatus {
+	value := ts
+	return &value
+}
+
+func importancePtr(i models.Importance) *models.Importance {
+	value := i
 	return &value
 }
 

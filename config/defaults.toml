@@ -32,7 +32,7 @@ file = "./pim-mcp.db"
 
 [provider]
 adapter = "demo"
-mode = "read_only"
+access_mode = "read_only"
 
 [provider.msgraph]
 client_id = ""

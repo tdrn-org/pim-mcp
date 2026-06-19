@@ -72,6 +72,110 @@ func (p *Provider) GetTask(ctx context.Context, id string) (*domain.Task, error)
 	return task, nil
 }
 
+func (p *Provider) CreateTask(ctx context.Context, create domain.TaskCreate) (*domain.Task, error) {
+	request := models.NewTodoTask()
+	request.SetTitle(&create.Title)
+	if create.Description != nil {
+		body := models.NewItemBody()
+		body.SetContentType(bodyTypePtr(models.TEXT_BODYTYPE))
+		body.SetContent(create.Description)
+		request.SetBody(body)
+	}
+	if create.Status != nil {
+		switch *create.Status {
+		case domain.StatusTodo:
+			request.SetStatus(taskStatusPtr(models.NOTSTARTED_TASKSTATUS))
+		case domain.StatusInProgress:
+			request.SetStatus(taskStatusPtr(models.INPROGRESS_TASKSTATUS))
+		case domain.StatusDone:
+			request.SetStatus(taskStatusPtr(models.COMPLETED_TASKSTATUS))
+		}
+	}
+	if create.Priority != nil {
+		switch *create.Priority {
+		case domain.PriorityLow:
+			request.SetImportance(importancePtr(models.LOW_IMPORTANCE))
+		case domain.PriorityMedium:
+			request.SetImportance(importancePtr(models.NORMAL_IMPORTANCE))
+		case domain.PriorityHigh:
+			request.SetImportance(importancePtr(models.HIGH_IMPORTANCE))
+		}
+	}
+	if create.DueAt != nil {
+		dueDateTime := models.NewDateTimeTimeZone()
+		dateTime, timezone := marshalTZTime(*create.DueAt)
+		dueDateTime.SetDateTime(dateTime)
+		dueDateTime.SetTimeZone(timezone)
+		request.SetDueDateTime(dueDateTime)
+	}
+	client, err := p.graphClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	listID, err := p.defaultTaskListID(ctx, client)
+	if err != nil {
+		return nil, err
+	}
+	response, err := client.Me().Todo().Lists().ByTodoTaskListId(listID).Tasks().Post(ctx, request, nil)
+	if err != nil {
+		return nil, fmt.Errorf("create task Graph API failure (cause: %w)", err)
+	}
+	task := p.taskFromResponse(response)
+	return task, nil
+}
+
+func (p *Provider) UpdateTask(ctx context.Context, id string, update domain.TaskUpdate) (*domain.Task, error) {
+	request := models.NewTodoTask()
+	request.SetTitle(update.Title)
+	if update.Description != nil {
+		body := models.NewItemBody()
+		body.SetContentType(bodyTypePtr(models.TEXT_BODYTYPE))
+		body.SetContent(update.Description)
+		request.SetBody(body)
+	}
+	if update.Status != nil {
+		switch *update.Status {
+		case domain.StatusTodo:
+			request.SetStatus(taskStatusPtr(models.NOTSTARTED_TASKSTATUS))
+		case domain.StatusInProgress:
+			request.SetStatus(taskStatusPtr(models.INPROGRESS_TASKSTATUS))
+		case domain.StatusDone:
+			request.SetStatus(taskStatusPtr(models.COMPLETED_TASKSTATUS))
+		}
+	}
+	if update.Priority != nil {
+		switch *update.Priority {
+		case domain.PriorityLow:
+			request.SetImportance(importancePtr(models.LOW_IMPORTANCE))
+		case domain.PriorityMedium:
+			request.SetImportance(importancePtr(models.NORMAL_IMPORTANCE))
+		case domain.PriorityHigh:
+			request.SetImportance(importancePtr(models.HIGH_IMPORTANCE))
+		}
+	}
+	if update.DueAt != nil {
+		dueDateTime := models.NewDateTimeTimeZone()
+		dateTime, timezone := marshalTZTime(*update.DueAt)
+		dueDateTime.SetDateTime(dateTime)
+		dueDateTime.SetTimeZone(timezone)
+		request.SetDueDateTime(dueDateTime)
+	}
+	client, err := p.graphClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	listID, err := p.defaultTaskListID(ctx, client)
+	if err != nil {
+		return nil, err
+	}
+	response, err := client.Me().Todo().Lists().ByTodoTaskListId(listID).Tasks().ByTodoTaskId(id).Patch(ctx, request, nil)
+	if err != nil {
+		return nil, fmt.Errorf("update task Graph API failure (cause: %w)", err)
+	}
+	task := p.taskFromResponse(response)
+	return task, nil
+}
+
 func (p *Provider) defaultTaskListID(ctx context.Context, client *msgraphsdk.GraphServiceClient) (string, error) {
 	response, err := client.Me().Todo().Lists().Get(ctx, nil)
 	if err != nil {
@@ -112,7 +216,7 @@ func (p *Provider) taskDateTimeFromResponse(model models.DateTimeTimeZoneable) *
 	if model == nil {
 		return nil
 	}
-	parsed := ParseTZtime(model.GetDateTime(), model.GetTimeZone(), p.cfg.MSGraph.DefaultTimeLocation.Location)
+	parsed := unmarshalTZTime(model.GetDateTime(), model.GetTimeZone(), p.cfg.MSGraph.DefaultTimeLocation.Location)
 	if parsed.Empty() {
 		return nil
 	}
