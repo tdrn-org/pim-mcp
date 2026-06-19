@@ -65,7 +65,7 @@ func (p *Provider) GetEvent(ctx context.Context, id string) (*domain.Event, erro
 
 func (p *Provider) eventFromResponse(model models.Eventable) *domain.Event {
 	sensitivity := model.GetSensitivity()
-	if sensitivity != nil && *sensitivity != models.NORMAL_SENSITIVITY && *sensitivity != models.PERSONAL_SENSITIVITY {
+	if sensitivity != nil && *sensitivity > models.Sensitivity(p.cfg.MSGraph.SensitivityLimit) {
 		return &domain.Event{}
 	}
 	body := model.GetBody()
@@ -89,7 +89,7 @@ func (p *Provider) eventFromResponse(model models.Eventable) *domain.Event {
 }
 
 func (p *Provider) tzTimeFromResponse(model models.DateTimeTimeZoneable) domain.TZTime {
-	return ParseTZtime(model.GetDateTime(), model.GetTimeZone(), p.cfg.DefaultTimeLocation.Location)
+	return ParseTZtime(model.GetDateTime(), model.GetTimeZone(), p.cfg.MSGraph.DefaultTimeLocation.Location)
 }
 
 func (p *Provider) attendeesFromResponse(models []models.Attendeeable) []domain.NamedEmailAddress {

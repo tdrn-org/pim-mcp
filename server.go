@@ -211,7 +211,7 @@ func (s *Server) startMCPServer(ctx context.Context, cfg *config.Config) error {
 	case config.ProviderAdapterDemo:
 		provider = demo.NewProvider(runtime)
 	case config.ProviderAdapterMSGraph:
-		provider, err = msgraph.NewProvider(runtime, &cfg.Provider.MSGraph)
+		provider, err = msgraph.NewProvider(runtime, &cfg.Provider)
 	default:
 		return fmt.Errorf("unrecognized provider adapter '%s'", cfg.Provider.Adapter)
 	}

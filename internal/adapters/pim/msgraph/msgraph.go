@@ -28,12 +28,12 @@ import (
 	"github.com/google/uuid"
 	kiotaauth "github.com/microsoft/kiota-authentication-azure-go"
 	msgraphsdk "github.com/microsoftgraph/msgraph-sdk-go"
+	"github.com/tdrn-org/go-cache"
+	"github.com/tdrn-org/go-cache/memory"
 	"github.com/tdrn-org/go-httpserver"
 	"github.com/tdrn-org/pim-mcp/config"
 	"github.com/tdrn-org/pim-mcp/internal/adapters/middleware/auth"
 	"github.com/tdrn-org/pim-mcp/internal/adapters/pim"
-	"github.com/tdrn-org/pim-mcp/internal/cache"
-	"github.com/tdrn-org/pim-mcp/internal/cache/memory"
 	"github.com/tdrn-org/pim-mcp/internal/domain"
 	"github.com/tdrn-org/pim-mcp/internal/session/model"
 	"golang.org/x/oauth2"
@@ -56,12 +56,12 @@ const graphScope string = "https://graph.microsoft.com/.default"
 
 type Provider struct {
 	runtime         Runtime
-	cfg             *config.MSGraphConfig
+	cfg             *config.ProviderConfig
 	credentialCache cache.KeyValue[string, *azidentity.OnBehalfOfCredential]
 	logger          *slog.Logger
 }
 
-func NewProvider(runtime Runtime, cfg *config.MSGraphConfig) (*Provider, error) {
+func NewProvider(runtime Runtime, cfg *config.ProviderConfig) (*Provider, error) {
 	provider := &Provider{
 		runtime: runtime,
 		cfg:     cfg,
@@ -76,7 +76,7 @@ func NewProvider(runtime Runtime, cfg *config.MSGraphConfig) (*Provider, error) 
 }
 
 func (p *Provider) loadCredential(ctx context.Context, token string) (*azidentity.OnBehalfOfCredential, error) {
-	credential, err := azidentity.NewOnBehalfOfCredentialWithSecret(p.cfg.TenantID, p.cfg.ClientID, token, p.cfg.ClientSecret, nil)
+	credential, err := azidentity.NewOnBehalfOfCredentialWithSecret(p.cfg.MSGraph.TenantID, p.cfg.MSGraph.ClientID, token, p.cfg.MSGraph.ClientSecret, nil)
 	if err != nil {
 		p.logger.Warn("failed to create OBO credential", slog.Any("err", err))
 		return nil, cache.ErrNotFound
@@ -102,8 +102,8 @@ func (p *Provider) credentialFromContext(ctx context.Context) (*azidentity.OnBeh
 	if session == nil || session.Credentials == "" {
 		return nil, fmt.Errorf("no session credentials available")
 	}
-	credential, ok := p.credentialCache.Get(ctx, session.Credentials)
-	if !ok {
+	credential, err := p.credentialCache.Get(ctx, session.Credentials)
+	if err != nil {
 		return nil, fmt.Errorf("no ObO credential available")
 	}
 	return credential, nil
@@ -111,16 +111,16 @@ func (p *Provider) credentialFromContext(ctx context.Context) (*azidentity.OnBeh
 
 func (p *Provider) oauth2Config() *oauth2.Config {
 	return &oauth2.Config{
-		ClientID:     p.cfg.ClientID,
-		ClientSecret: p.cfg.ClientSecret,
+		ClientID:     p.cfg.MSGraph.ClientID,
+		ClientSecret: p.cfg.MSGraph.ClientSecret,
 		RedirectURL:  p.runtime.BaseURL().JoinPath("/msgraph/callback").String(),
 		Scopes: []string{
 			"offline_access",
-			fmt.Sprintf("%s/access_as_user", p.cfg.ClientID),
+			fmt.Sprintf("%s/access_as_user", p.cfg.MSGraph.ClientID),
 		},
 		Endpoint: oauth2.Endpoint{
-			AuthURL:  fmt.Sprintf("https://login.microsoftonline.com/%s/oauth2/v2.0/authorize", p.cfg.TenantID),
-			TokenURL: fmt.Sprintf("https://login.microsoftonline.com/%s/oauth2/v2.0/token", p.cfg.TenantID),
+			AuthURL:  fmt.Sprintf("https://login.microsoftonline.com/%s/oauth2/v2.0/authorize", p.cfg.MSGraph.TenantID),
+			TokenURL: fmt.Sprintf("https://login.microsoftonline.com/%s/oauth2/v2.0/token", p.cfg.MSGraph.TenantID),
 		},
 	}
 }
@@ -238,7 +238,7 @@ func (p *Provider) handleTasks(w http.ResponseWriter, r *http.Request) {
 }
 
 func (p *Provider) ID() string {
-	return p.cfg.ClientID
+	return p.cfg.MSGraph.ClientID
 }
 
 func (*Provider) Name() string {
@@ -246,7 +246,7 @@ func (*Provider) Name() string {
 }
 
 func (p *Provider) Capabilities() domain.ProviderCapabilities {
-	return domain.AllProviderCapabilities()
+	return domain.AllProviderCapabilities(domain.AccessMode(p.cfg.AccessMode))
 }
 
 func (p *Provider) Mount(server *httpserver.Instance) {
@@ -269,11 +269,11 @@ func (p *Provider) CheckCredentials(ctx context.Context, credentials string) (*p
 	if credentials == "" {
 		return info, nil
 	}
-	credential, ok := p.credentialCache.Get(ctx, credentials)
-	if !ok {
+	credential, err := p.credentialCache.Get(ctx, credentials)
+	if err != nil {
 		return info, nil
 	}
-	_, err := credential.GetToken(ctx, policy.TokenRequestOptions{
+	_, err = credential.GetToken(ctx, policy.TokenRequestOptions{
 		Scopes: []string{
 			graphScope,
 		},
@@ -290,12 +290,12 @@ func (p *Provider) RefreshCredentials(ctx context.Context, credentials string) (
 	if credentials == "" {
 		return credentials, nil
 	}
-	credential, ok := p.credentialCache.Get(ctx, credentials)
-	if !ok {
+	credential, err := p.credentialCache.Get(ctx, credentials)
+	if err != nil {
 		p.runtime.Logger().Warn("discarding outdated credentials")
 		return "", nil
 	}
-	_, err := credential.GetToken(ctx, policy.TokenRequestOptions{
+	_, err = credential.GetToken(ctx, policy.TokenRequestOptions{
 		Scopes: []string{
 			graphScope,
 		},

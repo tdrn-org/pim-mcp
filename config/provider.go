@@ -19,13 +19,22 @@ package config
 import (
 	"fmt"
 	"log/slog"
+
+	"github.com/tdrn-org/pim-mcp/internal/domain"
 )
+
+type ProviderConfig struct {
+	Adapter    ProviderAdapter    `toml:"adapter"`
+	AccessMode ProviderAccessMode `toml:"access_mode"`
+	MSGraph    MSGraphConfig      `toml:"msgraph"`
+}
 
 type MSGraphConfig struct {
 	ClientID            string           `toml:"client_id"`
 	ClientSecret        string           `toml:"client_secret"`
 	TenantID            string           `toml:"tenant_id"`
 	DefaultTimeLocation TimeLocationSpec `toml:"default_time_location"`
+	SensitivityLimit    int              `toml:"sensitivity_limit"`
 }
 
 type ProviderAdapter string
@@ -64,5 +73,44 @@ func (p *ProviderAdapter) UnmarshalTOML(value any) error {
 		return fmt.Errorf("unknown provider adapter: '%s'", adapterString)
 	}
 	*p = adapter
+	return nil
+}
+
+type ProviderAccessMode string
+
+const (
+	ProviderAccessModeRO ProviderAccessMode = ProviderAccessMode(domain.ReadOnly)
+	ProviderAccessModeRW ProviderAccessMode = ProviderAccessMode(domain.ReadWrite)
+)
+
+var knownProviderAccessModes map[string]ProviderAccessMode = map[string]ProviderAccessMode{
+	string(ProviderAccessModeRO): ProviderAccessModeRO,
+	string(ProviderAccessModeRW): ProviderAccessModeRW,
+}
+
+func (m *ProviderAccessMode) Value() string {
+	for value, mode := range knownProviderAccessModes {
+		if *m == mode {
+			return value
+		}
+	}
+	slog.Warn("unexpected provider access mode", slog.Any("m", *m))
+	return ""
+}
+
+func (m *ProviderAccessMode) MarshalTOML() ([]byte, error) {
+	return []byte(`"` + m.Value() + `"`), nil
+}
+
+func (m *ProviderAccessMode) UnmarshalTOML(value any) error {
+	modeString, ok := value.(string)
+	if !ok {
+		return fmt.Errorf("unexpected provider access mode type %v", value)
+	}
+	mode, ok := knownProviderAccessModes[modeString]
+	if !ok {
+		return fmt.Errorf("unknown provider access mode: '%s'", modeString)
+	}
+	*m = mode
 	return nil
 }

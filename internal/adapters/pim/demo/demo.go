@@ -55,7 +55,7 @@ func (*Provider) Name() string {
 }
 
 func (p *Provider) Capabilities() domain.ProviderCapabilities {
-	return domain.AllProviderCapabilities()
+	return domain.AllProviderCapabilities(domain.ReadWrite)
 }
 
 func (p *Provider) Mount(server *httpserver.Instance) {

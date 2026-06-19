@@ -28,13 +28,10 @@ import (
 )
 
 type Config struct {
-	Logging  LoggingConfig `toml:"logging"`
-	Server   ServerConfig  `toml:"server"`
-	Store    StoreConfig   `toml:"store"`
-	Provider struct {
-		Adapter ProviderAdapter `toml:"adapter"`
-		MSGraph MSGraphConfig   `toml:"msgraph"`
-	} `toml:"provider"`
+	Logging  LoggingConfig  `toml:"logging"`
+	Server   ServerConfig   `toml:"server"`
+	Store    StoreConfig    `toml:"store"`
+	Provider ProviderConfig `toml:"provider"`
 }
 
 //go:embed defaults.toml

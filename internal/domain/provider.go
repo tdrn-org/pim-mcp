@@ -35,13 +35,13 @@ type ProviderCapabilities struct {
 	AccessMode AccessMode
 }
 
-func AllProviderCapabilities() ProviderCapabilities {
+func AllProviderCapabilities(mode AccessMode) ProviderCapabilities {
 	return ProviderCapabilities{
 		Email:      true,
 		Calendar:   true,
 		Tasks:      true,
 		Contacts:   true,
-		AccessMode: ReadWrite,
+		AccessMode: mode,
 	}
 }
 

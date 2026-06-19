@@ -151,7 +151,7 @@ func (api *API) SessionGet(w http.ResponseWriter, r *http.Request) {
 			Valid: credentialInfo.Valid,
 		},
 	}
-	api.runtime.SessionCookie().Set(w, session.ID, false)
+	api.runtime.SessionCookie().Set(w, session.ID, true)
 	api.sendApplicationJSONResponse(w, r, http.StatusOK, sessionInfo)
 }
 
@@ -213,7 +213,7 @@ func (api *API) LoginPost(w http.ResponseWriter, r *http.Request) {
 			api.sendPlainTextResponse(w, r, http.StatusUnauthorized, "invalid api_key")
 			return
 		}
-		api.runtime.SessionCookie().Set(w, session.ID, false)
+		api.runtime.SessionCookie().Set(w, session.ID, true)
 		http.Redirect(w, r, api.runtime.BaseURL().JoinPath("/session").String(), http.StatusFound)
 		return
 	}
@@ -234,7 +234,7 @@ func (api *API) LoginPost(w http.ResponseWriter, r *http.Request) {
 		api.sendError(w, r, http.StatusInternalServerError, err)
 		return
 	}
-	api.runtime.SessionCookie().Set(w, session.ID, false)
+	api.runtime.SessionCookie().Set(w, session.ID, true)
 	loginURL, err := api.runtime.LoginURL(r.Context())
 	if err != nil {
 		api.sendError(w, r, http.StatusInternalServerError, err)

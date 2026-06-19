@@ -112,7 +112,7 @@ func (p *Provider) taskDateTimeFromResponse(model models.DateTimeTimeZoneable) *
 	if model == nil {
 		return nil
 	}
-	parsed := ParseTZtime(model.GetDateTime(), model.GetTimeZone(), p.cfg.DefaultTimeLocation.Location)
+	parsed := ParseTZtime(model.GetDateTime(), model.GetTimeZone(), p.cfg.MSGraph.DefaultTimeLocation.Location)
 	if parsed.Empty() {
 		return nil
 	}
@@ -156,13 +156,13 @@ func (p *Provider) taskFilterRequestConfig(filter domain.TaskFilter) *users.Item
 	if filter.DueAfter != nil && !filter.DueAfter.IsZero() {
 		dueAfter = filter.DueAfter.UTC().Format(time.RFC3339)
 	} else {
-		dueAfter = nowUTC.Add(7 * 24 * time.Hour).Format(time.RFC3339)
+		dueAfter = nowUTC.Format(time.RFC3339)
 	}
 	var dueBefore string
 	if filter.DueBefore != nil && !filter.DueBefore.IsZero() {
 		dueBefore = filter.DueBefore.UTC().Format(time.RFC3339)
 	} else {
-		dueBefore = nowUTC.Format(time.RFC3339)
+		dueBefore = nowUTC.Add(7 * 24 * time.Hour).Format(time.RFC3339)
 	}
 	filterParam := fmt.Sprintf("(dueDateTime/dateTime ge '%s') and (dueDateTime/dateTime le '%s')", dueAfter, dueBefore)
 	headers := &kiota.RequestHeaders{}
@@ -170,15 +170,12 @@ func (p *Provider) taskFilterRequestConfig(filter domain.TaskFilter) *users.Item
 	headers.Add("Prefer", "outlook.body-content-type=\"text\"")
 	requestConfig := &users.ItemTodoListsItemTasksRequestBuilderGetRequestConfiguration{
 		QueryParameters: &users.ItemTodoListsItemTasksRequestBuilderGetQueryParameters{
-			//			Search: search,
-			//			Filter: &filterParam,
-			//			Top: limit,
-			//			Count: boolPtr(true),
+			Search: search,
+			Filter: &filterParam,
+			Top:    limit,
+			Count:  boolPtr(true),
 		},
 		Headers: headers,
 	}
-	_ = limit
-	_ = search
-	_ = filterParam
 	return requestConfig
 }
