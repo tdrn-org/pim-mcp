@@ -24,9 +24,15 @@ import (
 	"github.com/tdrn-org/pim-mcp/internal/domain"
 )
 
-func addTaskTools(server *mcp.Server, provider domain.TaskProvider) {
+func addTaskTools(server *mcp.Server, caps domain.ProviderCapabilities, provider domain.TaskProvider) {
 	addSearchTasksTool(server, provider)
 	addGetTaskTool(server, provider)
+	if caps.AccessMode == domain.ReadWrite {
+		if writeProvider, ok := provider.(domain.TaskWriteProvider); ok {
+			addCreateTaskTool(server, writeProvider)
+			addUpdateTaskTool(server, writeProvider)
+		}
+	}
 }
 
 func addSearchTasksTool(server *mcp.Server, provider domain.TaskProvider) {
@@ -132,4 +138,82 @@ func toTaskOutput(task *domain.Task) *TaskOutput {
 		UpdatedAt:   task.UpdatedAt,
 	}
 	return output
+}
+
+func addCreateTaskTool(server *mcp.Server, provider domain.TaskWriteProvider) {
+	tool := &mcp.Tool{
+		Name:        "createTask",
+		Description: "Creates a new task. The created task details are returned. Requires write access (access_mode = read_write).",
+	}
+	handler := func(ctx context.Context, req *mcp.CallToolRequest, params *CreateTaskParams) (*mcp.CallToolResult, any, error) {
+		create := domain.TaskCreate{
+			Title:       params.Title,
+			Description: params.Description,
+			Status:      (*domain.TaskStatus)(params.Status),
+			Priority:    (*domain.TaskPriority)(params.Priority),
+		}
+		if params.DueAt != nil && *params.DueAt != "" {
+			parsed, err := time.Parse(time.RFC3339, *params.DueAt)
+			if err == nil {
+				dueAt := domain.NewTZTime(parsed, "")
+				create.DueAt = &dueAt
+			}
+		}
+		task, err := provider.CreateTask(ctx, create)
+		if err != nil {
+			return nil, nil, err
+		}
+		return nil, toTaskOutput(task), nil
+	}
+	mcp.AddTool(server, tool, handler)
+}
+
+func addUpdateTaskTool(server *mcp.Server, provider domain.TaskWriteProvider) {
+	tool := &mcp.Tool{
+		Name:        "updateTask",
+		Description: "Updates an existing task. Only the provided fields are updated (PATCH semantics). The updated task details are returned. Requires write access (access_mode = read_write).",
+	}
+	handler := func(ctx context.Context, req *mcp.CallToolRequest, params *UpdateTaskParams) (*mcp.CallToolResult, any, error) {
+		update := domain.TaskUpdate{
+			Title:       params.Title,
+			Description: params.Description,
+			Status:      (*domain.TaskStatus)(params.Status),
+			Priority:    (*domain.TaskPriority)(params.Priority),
+		}
+		if params.DueAt != nil {
+			if *params.DueAt == "" {
+				// Empty string = clear due date (zero-value TZTime signals "clear")
+				update.DueAt = &domain.TZTime{}
+			} else {
+				parsed, err := time.Parse(time.RFC3339, *params.DueAt)
+				if err == nil {
+					dueAt := domain.NewTZTime(parsed, "")
+					update.DueAt = &dueAt
+				}
+			}
+		}
+		task, err := provider.UpdateTask(ctx, params.ID, update)
+		if err != nil {
+			return nil, nil, err
+		}
+		return nil, toTaskOutput(task), nil
+	}
+	mcp.AddTool(server, tool, handler)
+}
+
+type CreateTaskParams struct {
+	Title       string  `json:"title"                  jsonschema:"The title of the task."`
+	Description *string `json:"description,omitempty"  jsonschema:"An optional description for the task."`
+	Status      *string `json:"status,omitempty"       jsonschema:"The status of the task (todo, in_progress, done). Default: todo."`
+	Priority    *string `json:"priority,omitempty"     jsonschema:"The priority of the task (low, medium, high). Default: medium."`
+	DueAt       *string `json:"due_at,omitempty"       jsonschema:"The optional due date of the task (RFC3339 format, e.g. 2026-06-21T22:00:00Z)."`
+}
+
+type UpdateTaskParams struct {
+	ID          string  `json:"id"                     jsonschema:"ID of the task to update."`
+	Title       *string `json:"title,omitempty"        jsonschema:"New title for the task."`
+	Description *string `json:"description,omitempty"  jsonschema:"New description for the task."`
+	Status      *string `json:"status,omitempty"       jsonschema:"New status for the task (todo, in_progress, done)."`
+	Priority    *string `json:"priority,omitempty"     jsonschema:"New priority for the task (low, medium, high)."`
+	DueAt       *string `json:"due_at,omitempty"       jsonschema:"New due date for the task (RFC3339 format, e.g. 2026-06-21T22:00:00Z). Pass an empty string to clear the due date."`
 }
