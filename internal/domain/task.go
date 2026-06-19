@@ -75,7 +75,19 @@ type TaskFilter struct {
 	DueBefore *time.Time
 }
 
+// TaskUpdate beschreibt, welche Felder eines Tasks geändert werden sollen.
+// Nur non-nil Felder werden angewandt (PATCH-Semantik).
+// DueAt mit zero DateTime (IsZero()==true) löscht das Fälligkeitsdatum.
+type TaskUpdate struct {
+	Title       *string
+	Description *string
+	Status      *TaskStatus
+	Priority    *TaskPriority
+	DueAt       *TZTime // nil = nicht anfassen; &TZTime{} = löschen; sonst setzen
+}
+
 type TaskProvider interface {
 	SearchTasks(ctx context.Context, filter TaskFilter) ([]*Task, error)
 	GetTask(ctx context.Context, id string) (*Task, error)
+	UpdateTask(ctx context.Context, id string, update TaskUpdate) (*Task, error)
 }
