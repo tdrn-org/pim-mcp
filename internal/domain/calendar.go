@@ -58,9 +58,25 @@ const (
 	EventStatusCanceled  EventStatus = "canceled"
 )
 
+// EventCreate beschreibt die Felder zum Anlegen eines neuen Termins.
+// Keine Teilnehmer, keine Recurrence (Sicherheitsphilosophie).
+type EventCreate struct {
+	Title       string // Pflicht
+	Description *string
+	Start       TZTime // Pflicht
+	End         TZTime // Pflicht
+	Location    *string
+	IsAllDay    *bool // Default: false
+}
+
 type CalendarProvider interface {
 	SearchEvents(ctx context.Context, filter EventFilter) ([]*Event, error)
 	GetEvent(ctx context.Context, id string) (*Event, error)
+}
+
+type CalendarWriteProvider interface {
+	CalendarProvider
+	CreateEvent(ctx context.Context, create EventCreate) (*Event, error)
 }
 
 type EventFilter struct {

@@ -52,9 +52,21 @@ func (e *Email) Empty() bool {
 	return e.ID == ""
 }
 
+// MailUpdate beschreibt, welche Felder einer Mail geändert werden sollen.
+// Nur non-nil Felder werden angewandt (PATCH-Semantik).
+// Aktuell nur IsRead — erweiterbar wie TaskUpdate.
+type MailUpdate struct {
+	IsRead *bool // nil=don't touch; nur &true verwenden (Sicherheitsphilosophie)
+}
+
 type EmailProvider interface {
 	SearchEmails(ctx context.Context, filter EmailFilter) ([]*Email, error)
 	GetEmail(ctx context.Context, id string) (*Email, error)
+}
+
+type EmailWriteProvider interface {
+	EmailProvider
+	UpdateMail(ctx context.Context, id string, update MailUpdate) (*Email, error)
 }
 
 type EmailFilter struct {
