@@ -73,45 +73,14 @@ func (p *Provider) GetTask(ctx context.Context, id string) (*domain.Task, error)
 }
 
 func (p *Provider) CreateTask(ctx context.Context, create domain.TaskCreate) (*domain.Task, error) {
-	request := models.NewTodoTask()
-	request.SetTitle(&create.Title)
-	if create.Description != nil {
-		body := models.NewItemBody()
-		body.SetContentType(bodyTypePtr(models.TEXT_BODYTYPE))
-		body.SetContent(create.Description)
-		request.SetBody(body)
-	}
-	if create.Status != nil {
-		switch *create.Status {
-		case domain.StatusTodo:
-			request.SetStatus(taskStatusPtr(models.NOTSTARTED_TASKSTATUS))
-		case domain.StatusInProgress:
-			request.SetStatus(taskStatusPtr(models.INPROGRESS_TASKSTATUS))
-		case domain.StatusDone:
-			request.SetStatus(taskStatusPtr(models.COMPLETED_TASKSTATUS))
-		}
-	}
-	if create.Priority != nil {
-		switch *create.Priority {
-		case domain.PriorityLow:
-			request.SetImportance(importancePtr(models.LOW_IMPORTANCE))
-		case domain.PriorityMedium:
-			request.SetImportance(importancePtr(models.NORMAL_IMPORTANCE))
-		case domain.PriorityHigh:
-			request.SetImportance(importancePtr(models.HIGH_IMPORTANCE))
-		}
-	}
-	if create.DueAt != nil {
-		if create.DueAt.Empty() {
-			request.SetDueDateTime(nil)
-		} else {
-			dueDateTime := models.NewDateTimeTimeZone()
-			dateTime, timezone := marshalTZTime(*create.DueAt)
-			dueDateTime.SetDateTime(dateTime)
-			dueDateTime.SetTimeZone(timezone)
-			request.SetDueDateTime(dueDateTime)
-		}
-	}
+	requestBuilder := todoTaskRequestBuilder{Request: models.NewTodoTask()}
+	request := requestBuilder.
+		Title(&create.Title).
+		Description(create.Description).
+		Status(create.Status).
+		Priority(create.Priority).
+		DueAt(create.DueAt).
+		Request
 	client, err := p.graphClient(ctx)
 	if err != nil {
 		return nil, err
@@ -129,47 +98,13 @@ func (p *Provider) CreateTask(ctx context.Context, create domain.TaskCreate) (*d
 }
 
 func (p *Provider) UpdateTask(ctx context.Context, id string, update domain.TaskUpdate) (*domain.Task, error) {
-	request := models.NewTodoTask()
-	if update.Title != nil {
-		request.SetTitle(update.Title)
-	}
-	if update.Description != nil {
-		body := models.NewItemBody()
-		body.SetContentType(bodyTypePtr(models.TEXT_BODYTYPE))
-		body.SetContent(update.Description)
-		request.SetBody(body)
-	}
-	if update.Status != nil {
-		switch *update.Status {
-		case domain.StatusTodo:
-			request.SetStatus(taskStatusPtr(models.NOTSTARTED_TASKSTATUS))
-		case domain.StatusInProgress:
-			request.SetStatus(taskStatusPtr(models.INPROGRESS_TASKSTATUS))
-		case domain.StatusDone:
-			request.SetStatus(taskStatusPtr(models.COMPLETED_TASKSTATUS))
-		}
-	}
-	if update.Priority != nil {
-		switch *update.Priority {
-		case domain.PriorityLow:
-			request.SetImportance(importancePtr(models.LOW_IMPORTANCE))
-		case domain.PriorityMedium:
-			request.SetImportance(importancePtr(models.NORMAL_IMPORTANCE))
-		case domain.PriorityHigh:
-			request.SetImportance(importancePtr(models.HIGH_IMPORTANCE))
-		}
-	}
-	if update.DueAt != nil {
-		if update.DueAt.Empty() {
-			request.SetDueDateTime(nil)
-		} else {
-			dueDateTime := models.NewDateTimeTimeZone()
-			dateTime, timezone := marshalTZTime(*update.DueAt)
-			dueDateTime.SetDateTime(dateTime)
-			dueDateTime.SetTimeZone(timezone)
-			request.SetDueDateTime(dueDateTime)
-		}
-	}
+	requestBuilder := todoTaskRequestBuilder{Request: models.NewTodoTask()}
+	request := requestBuilder.Title(update.Title).
+		Description(update.Description).
+		Status(update.Status).
+		Priority(update.Priority).
+		DueAt(update.DueAt).
+		Request
 	client, err := p.graphClient(ctx)
 	if err != nil {
 		return nil, err
@@ -292,4 +227,68 @@ func (p *Provider) taskFilterRequestConfig(filter domain.TaskFilter) *users.Item
 		Headers: headers,
 	}
 	return requestConfig
+}
+
+type todoTaskRequestBuilder struct {
+	Request *models.TodoTask
+}
+
+func (b *todoTaskRequestBuilder) Title(title *string) *todoTaskRequestBuilder {
+	if title != nil {
+		b.Request.SetTitle(title)
+	}
+	return b
+}
+
+func (b *todoTaskRequestBuilder) Description(description *string) *todoTaskRequestBuilder {
+	if description != nil {
+		body := models.NewItemBody()
+		body.SetContentType(bodyTypePtr(models.TEXT_BODYTYPE))
+		body.SetContent(description)
+		b.Request.SetBody(body)
+	}
+	return b
+}
+
+func (b *todoTaskRequestBuilder) Status(status *domain.TaskStatus) *todoTaskRequestBuilder {
+	if status != nil {
+		switch *status {
+		case domain.StatusTodo:
+			b.Request.SetStatus(taskStatusPtr(models.NOTSTARTED_TASKSTATUS))
+		case domain.StatusInProgress:
+			b.Request.SetStatus(taskStatusPtr(models.INPROGRESS_TASKSTATUS))
+		case domain.StatusDone:
+			b.Request.SetStatus(taskStatusPtr(models.COMPLETED_TASKSTATUS))
+		}
+	}
+	return b
+}
+
+func (b *todoTaskRequestBuilder) Priority(priority *domain.TaskPriority) *todoTaskRequestBuilder {
+	if priority != nil {
+		switch *priority {
+		case domain.PriorityLow:
+			b.Request.SetImportance(importancePtr(models.LOW_IMPORTANCE))
+		case domain.PriorityMedium:
+			b.Request.SetImportance(importancePtr(models.NORMAL_IMPORTANCE))
+		case domain.PriorityHigh:
+			b.Request.SetImportance(importancePtr(models.HIGH_IMPORTANCE))
+		}
+	}
+	return b
+}
+
+func (b *todoTaskRequestBuilder) DueAt(dueAt *domain.TZTime) *todoTaskRequestBuilder {
+	if dueAt != nil {
+		if dueAt.Empty() {
+			b.Request.SetDueDateTime(nil)
+		} else {
+			dueDateTime := models.NewDateTimeTimeZone()
+			dateTime, timezone := marshalTZTime(*dueAt)
+			dueDateTime.SetDateTime(dateTime)
+			dueDateTime.SetTimeZone(timezone)
+			b.Request.SetDueDateTime(dueDateTime)
+		}
+	}
+	return b
 }

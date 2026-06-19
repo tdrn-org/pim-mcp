@@ -106,6 +106,6 @@ type TaskProvider interface {
 // Wird nur registriert, wenn ProviderCapabilities.AccessMode == ReadWrite.
 type TaskWriteProvider interface {
 	TaskProvider
-	CreateTask(ctx context.Context, task TaskCreate) (*Task, error)
+	CreateTask(ctx context.Context, create TaskCreate) (*Task, error)
 	UpdateTask(ctx context.Context, id string, update TaskUpdate) (*Task, error)
 }

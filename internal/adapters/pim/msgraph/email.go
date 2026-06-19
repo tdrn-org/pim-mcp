@@ -70,6 +70,23 @@ func (p *Provider) GetEmail(ctx context.Context, id string) (*domain.Email, erro
 	return email, nil
 }
 
+func (p *Provider) UpdateEmail(ctx context.Context, id string, update domain.EmailUpdate) (*domain.Email, error) {
+	requestBuilder := mailRequestBuilder{Request: models.NewMessage()}
+	request := requestBuilder.
+		IsRead(update.IsRead).
+		Request
+	client, err := p.graphClient(ctx)
+	if err != nil {
+		return nil, err
+	}
+	response, err := client.Me().Messages().Post(ctx, request, nil)
+	if err != nil {
+		return nil, fmt.Errorf("update email Graph API failure (cause: %w)", err)
+	}
+	email := p.emailFromResponse(response)
+	return email, nil
+}
+
 func (p *Provider) emailFromResponse(model models.Messageable) *domain.Email {
 	body := model.GetUniqueBody()
 	if body == nil {
@@ -161,4 +178,15 @@ func (p *Provider) emailFilterRequestConfig(filter domain.EmailFilter) *users.It
 		Headers: headers,
 	}
 	return requestConfig
+}
+
+type mailRequestBuilder struct {
+	Request *models.Message
+}
+
+func (b *mailRequestBuilder) IsRead(isRead *bool) *mailRequestBuilder {
+	if isRead != nil {
+		b.Request.SetIsRead(isRead)
+	}
+	return b
 }
