@@ -102,11 +102,15 @@ func (p *Provider) CreateTask(ctx context.Context, create domain.TaskCreate) (*d
 		}
 	}
 	if create.DueAt != nil {
-		dueDateTime := models.NewDateTimeTimeZone()
-		dateTime, timezone := marshalTZTime(*create.DueAt)
-		dueDateTime.SetDateTime(dateTime)
-		dueDateTime.SetTimeZone(timezone)
-		request.SetDueDateTime(dueDateTime)
+		if create.DueAt.Empty() {
+			request.SetDueDateTime(nil)
+		} else {
+			dueDateTime := models.NewDateTimeTimeZone()
+			dateTime, timezone := marshalTZTime(*create.DueAt)
+			dueDateTime.SetDateTime(dateTime)
+			dueDateTime.SetTimeZone(timezone)
+			request.SetDueDateTime(dueDateTime)
+		}
 	}
 	client, err := p.graphClient(ctx)
 	if err != nil {
@@ -126,7 +130,9 @@ func (p *Provider) CreateTask(ctx context.Context, create domain.TaskCreate) (*d
 
 func (p *Provider) UpdateTask(ctx context.Context, id string, update domain.TaskUpdate) (*domain.Task, error) {
 	request := models.NewTodoTask()
-	request.SetTitle(update.Title)
+	if update.Title != nil {
+		request.SetTitle(update.Title)
+	}
 	if update.Description != nil {
 		body := models.NewItemBody()
 		body.SetContentType(bodyTypePtr(models.TEXT_BODYTYPE))
@@ -154,11 +160,15 @@ func (p *Provider) UpdateTask(ctx context.Context, id string, update domain.Task
 		}
 	}
 	if update.DueAt != nil {
-		dueDateTime := models.NewDateTimeTimeZone()
-		dateTime, timezone := marshalTZTime(*update.DueAt)
-		dueDateTime.SetDateTime(dateTime)
-		dueDateTime.SetTimeZone(timezone)
-		request.SetDueDateTime(dueDateTime)
+		if update.DueAt.Empty() {
+			request.SetDueDateTime(nil)
+		} else {
+			dueDateTime := models.NewDateTimeTimeZone()
+			dateTime, timezone := marshalTZTime(*update.DueAt)
+			dueDateTime.SetDateTime(dateTime)
+			dueDateTime.SetTimeZone(timezone)
+			request.SetDueDateTime(dueDateTime)
+		}
 	}
 	client, err := p.graphClient(ctx)
 	if err != nil {
