@@ -62,10 +62,10 @@ func NewHandler(runtime Runtime, provider domain.Provider) http.Handler {
 
 	capabilities := provider.Capabilities()
 	if capabilities.Email {
-		addEmailTools(server, provider.(domain.EmailProvider))
+		addEmailTools(server, capabilities, provider.(domain.EmailProvider))
 	}
 	if capabilities.Calendar {
-		addCalendarTools(server, provider.(domain.CalendarProvider))
+		addCalendarTools(server, capabilities, provider.(domain.CalendarProvider))
 	}
 	if capabilities.Tasks {
 		addTaskTools(server, capabilities, provider.(domain.TaskProvider))

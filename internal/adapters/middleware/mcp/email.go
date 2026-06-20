@@ -24,9 +24,14 @@ import (
 	"github.com/tdrn-org/pim-mcp/internal/domain"
 )
 
-func addEmailTools(server *mcp.Server, provider domain.EmailProvider) {
+func addEmailTools(server *mcp.Server, caps domain.ProviderCapabilities, provider domain.EmailProvider) {
 	addSearchEmailsTool(server, provider)
 	addGetEmailTool(server, provider)
+	if caps.AccessMode == domain.ReadWrite {
+		if writeProvider, ok := provider.(domain.EmailWriteProvider); ok {
+			addUpdateEmailTool(server, writeProvider)
+		}
+	}
 }
 
 func addSearchEmailsTool(server *mcp.Server, provider domain.EmailProvider) {
@@ -140,4 +145,31 @@ func toEmailOutput(email *domain.Email) *EmailOutput {
 		ThreadID:   email.ThreadID,
 	}
 	return output
+}
+
+func addUpdateEmailTool(server *mcp.Server, provider domain.EmailWriteProvider) {
+	tool := &mcp.Tool{
+		Name:        "updateEmail",
+		Description: "Marks an email as read (or unread). Per safety policy, only the IsRead flag can be modified. Requires write access (access_mode = read_write).",
+	}
+	handler := func(ctx context.Context, req *mcp.CallToolRequest, params *UpdateEmailParams) (*mcp.CallToolResult, any, error) {
+		isRead := true
+		if params.IsRead != nil {
+			isRead = *params.IsRead
+		}
+		update := domain.EmailUpdate{
+			IsRead: &isRead,
+		}
+		email, err := provider.UpdateEmail(ctx, params.ID, update)
+		if err != nil {
+			return nil, nil, err
+		}
+		return nil, toEmailOutput(email), nil
+	}
+	mcp.AddTool(server, tool, handler)
+}
+
+type UpdateEmailParams struct {
+	ID     string `json:"id"                 jsonschema:"ID of the email to update."`
+	IsRead *bool  `json:"is_read,omitempty"  jsonschema:"The read status to set. Defaults to true (mark as read)."`
 }

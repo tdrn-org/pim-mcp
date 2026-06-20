@@ -18,15 +18,21 @@ package mcp
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/tdrn-org/pim-mcp/internal/domain"
 )
 
-func addCalendarTools(server *mcp.Server, provider domain.CalendarProvider) {
+func addCalendarTools(server *mcp.Server, caps domain.ProviderCapabilities, provider domain.CalendarProvider) {
 	addSearchEventsTool(server, provider)
 	addGetEventTool(server, provider)
+	if caps.AccessMode == domain.ReadWrite {
+		if writeProvider, ok := provider.(domain.CalendarWriteProvider); ok {
+			addCreateEventTool(server, writeProvider)
+		}
+	}
 }
 
 func addSearchEventsTool(server *mcp.Server, provider domain.CalendarProvider) {
@@ -136,4 +142,44 @@ func toEventOutput(event *domain.Event) *EventOutput {
 		UpdatedAt:   event.UpdatedAt,
 	}
 	return output
+}
+
+func addCreateEventTool(server *mcp.Server, provider domain.CalendarWriteProvider) {
+	tool := &mcp.Tool{
+		Name:        "createEvent",
+		Description: "Creates a new calendar event. The created event details are returned. No attendees or recurrence are supported per safety policy. Requires write access (access_mode = read_write).",
+	}
+	handler := func(ctx context.Context, req *mcp.CallToolRequest, params *CreateEventParams) (*mcp.CallToolResult, any, error) {
+		start, err := time.Parse(time.RFC3339, params.Start)
+		if err != nil {
+			return nil, nil, fmt.Errorf("invalid start time: %w", err)
+		}
+		end, err := time.Parse(time.RFC3339, params.End)
+		if err != nil {
+			return nil, nil, fmt.Errorf("invalid end time: %w", err)
+		}
+		create := domain.EventCreate{
+			Title:       params.Title,
+			Description: params.Description,
+			Start:       domain.NewTZTime(start, ""),
+			End:         domain.NewTZTime(end, ""),
+			Location:    params.Location,
+			IsAllDay:    params.IsAllDay,
+		}
+		event, err := provider.CreateEvent(ctx, create)
+		if err != nil {
+			return nil, nil, err
+		}
+		return nil, toEventOutput(event), nil
+	}
+	mcp.AddTool(server, tool, handler)
+}
+
+type CreateEventParams struct {
+	Title       string  `json:"title"                 jsonschema:"The title of the event."`
+	Description *string `json:"description,omitempty"  jsonschema:"An optional description for the event."`
+	Start       string  `json:"start"                  jsonschema:"The start time of the event (RFC3339 format, e.g. 2026-06-21T14:00:00Z)."`
+	End         string  `json:"end"                    jsonschema:"The end time of the event (RFC3339 format, e.g. 2026-06-21T15:00:00Z)."`
+	Location    *string `json:"location,omitempty"     jsonschema:"An optional location for the event."`
+	IsAllDay    *bool   `json:"is_all_day,omitempty"   jsonschema:"Whether the event is an all day event. Defaults to false."`
 }
