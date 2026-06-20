@@ -191,6 +191,7 @@ func (api *API) LoginPost(w http.ResponseWriter, r *http.Request) {
 	var req loginRequest
 	if err := r.ParseForm(); err == nil {
 		req.APIKey = r.FormValue("api_key")
+		req.Reconnect = r.FormValue("reconnect") == "true"
 	}
 	if req.APIKey == "" && r.Body != nil && r.ContentLength > 0 {
 		// Try JSON body as fallback
