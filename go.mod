@@ -81,7 +81,7 @@ require (
 	github.com/segmentio/asm v1.2.1 // indirect
 	github.com/segmentio/encoding v0.5.4 // indirect
 	github.com/stretchr/testify v1.11.1
-	github.com/tdrn-org/go-cache v0.0.1
+	github.com/tdrn-org/go-cache v0.0.2
 	github.com/tdrn-org/go-database v0.1.0
 	github.com/tdrn-org/go-diff v0.1.3
 	github.com/tdrn-org/go-httpserver v0.1.1
