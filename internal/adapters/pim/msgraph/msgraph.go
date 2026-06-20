@@ -282,7 +282,7 @@ func (p *Provider) CheckCredentials(ctx context.Context, credentials string) *pi
 	return info
 }
 
-func (p *Provider) RefreshCredentials(ctx context.Context, credentials string) string {
+func (p *Provider) RefreshCredentials(ctx context.Context, credentials string, refreshInterval time.Duration) string {
 	if credentials == "" {
 		return credentials
 	}
@@ -291,7 +291,7 @@ func (p *Provider) RefreshCredentials(ctx context.Context, credentials string) s
 		p.logger.Warn("discarding invalid credentials", slog.Any("err", err))
 		return ""
 	}
-	if !token.Valid() && token.RefreshToken != "" {
+	if time.Until(token.Expiry) < refreshInterval && token.RefreshToken != "" {
 		p.logger.Info("refreshing token...")
 		refreshedToken, err := p.oauth2Config().TokenSource(ctx, &oauth2.Token{RefreshToken: token.RefreshToken}).Token()
 		if err == nil {

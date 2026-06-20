@@ -19,6 +19,7 @@ package pim
 import (
 	"context"
 	"net/url"
+	"time"
 
 	"github.com/tdrn-org/go-httpserver"
 	"github.com/tdrn-org/pim-mcp/internal/domain"
@@ -29,7 +30,7 @@ type Provider interface {
 	Mount(server *httpserver.Instance)
 	LoginURL() *url.URL
 	CheckCredentials(ctx context.Context, credentials string) *CredentialInfo
-	RefreshCredentials(ctx context.Context, credentials string) string
+	RefreshCredentials(ctx context.Context, credentials string, refreshInterval time.Duration) string
 }
 
 type CredentialInfo struct {

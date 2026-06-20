@@ -275,7 +275,7 @@ func (s *Server) runJobs() {
 	}
 	for _, session := range sessions {
 		if session.Credentials != "" {
-			credentials := s.provider.RefreshCredentials(ctx, session.Credentials)
+			credentials := s.provider.RefreshCredentials(ctx, session.Credentials, serverJobTickerSchedule)
 			if session.Credentials != credentials {
 				session.Credentials = credentials
 				err = session.Update(ctx)
