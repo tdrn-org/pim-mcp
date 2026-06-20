@@ -98,6 +98,7 @@ type EmailSummaryOutput struct {
 	ReceivedAt time.Time                 `json:"received_at" jsonschema:"The receive time of the email (RFC3339 format)."`
 	SentAt     time.Time                 `json:"sent_at" jsonschema:"The sent time of the email (RFC3339 format)."`
 	IsRead     bool                      `json:"is_read" jsonschema:"The read status of the email"`
+	Folder     *string                   `json:"folder,omitempty" jsonschema:"The parent folder ID of the email. null if not available."`
 }
 
 type EmailOutput struct {
@@ -111,6 +112,7 @@ type EmailOutput struct {
 	SentAt     time.Time                 `json:"sent_at" jsonschema:"The sent time of the email (RFC3339 format)."`
 	IsRead     bool                      `json:"is_read" jsonschema:"The read status of the email"`
 	ThreadID   string                    `json:"thread_id" jsonschema:"The thread ID of the email"`
+	Folder     *string                   `json:"folder,omitempty" jsonschema:"The parent folder ID of the email. null if not available."`
 }
 
 func toEmailSummaryOutputs(emails []*domain.Email) *SearchEmailOutput {
@@ -125,6 +127,7 @@ func toEmailSummaryOutputs(emails []*domain.Email) *SearchEmailOutput {
 			ReceivedAt: email.ReceivedAt,
 			SentAt:     email.SentAt,
 			IsRead:     email.IsRead,
+			Folder:     email.Folder,
 		}
 		outputs = append(outputs, output)
 	}
@@ -143,6 +146,7 @@ func toEmailOutput(email *domain.Email) *EmailOutput {
 		SentAt:     email.SentAt,
 		IsRead:     email.IsRead,
 		ThreadID:   email.ThreadID,
+		Folder:     email.Folder,
 	}
 	return output
 }

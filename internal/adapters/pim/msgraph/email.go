@@ -122,6 +122,7 @@ func (p *Provider) emailFromResponse(ctx context.Context, client *msgraphsdkgo.G
 		SentAt:     ptrTime(model.GetSentDateTime()),
 		IsRead:     ptrBool(model.GetIsRead(), true),
 		ThreadID:   ptrString(model.GetConversationId()),
+		Folder:     model.GetParentFolderId(),
 	}
 }
 
