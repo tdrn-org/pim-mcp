@@ -112,6 +112,11 @@ func (p *Provider) credentialFromContext(ctx context.Context) (*azidentity.OnBeh
 	if err != nil {
 		return nil, domain.ErrAuthenticationRequired
 	}
+	_, err = credential.GetToken(ctx, graphTokenRequestOptions)
+	if err != nil {
+		p.logger.Warn("failed to get credential token", slog.Any("err", err))
+		return nil, domain.ErrAuthenticationRequired
+	}
 	return credential, nil
 }
 
