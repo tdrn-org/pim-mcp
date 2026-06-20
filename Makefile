@@ -74,7 +74,7 @@ testdeps: build
 	$(GO) install honnef.co/go/tools/cmd/staticcheck@latest
 
 .PHONY: check
-check: testdeps
+check: testdeps vet
 	@echo "Testing artifacts..."
 ifeq (1, $(WEB))
 	# $(NPM) $(NPMOPTS) run --prefix internal/server/web test
@@ -98,3 +98,11 @@ tidy: init
 .PHONY: generate
 generate: deps
 	go generate ./...
+
+.PHONY: fmt
+fmt:
+	go fmt ./...
+
+.PHONY: vet
+vet:
+	go vet ./...

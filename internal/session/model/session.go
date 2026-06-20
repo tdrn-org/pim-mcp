@@ -27,11 +27,11 @@ import (
 
 type Session struct {
 	driver      *database.Driver
-	ID          string
-	APIKey      string
-	APIKeyShown bool
-	Credentials string
-	LastUpdate  int64
+	ID          string `db:"id"`
+	APIKey      string `db:"api_key"`
+	APIKeyShown bool   `db:"api_key_shown"`
+	Credentials string `db:"credentials"`
+	LastUpdate  int64  `db:"last_update"`
 }
 
 const sessionAPIKeyLenght int = 48
@@ -68,7 +68,7 @@ func SelectSession(ctx context.Context, driver *database.Driver, id string) (*Se
 		driver: driver,
 		ID:     id,
 	}
-	err = row.Scan(&s.APIKey, &s.APIKeyShown, &s.Credentials, &s.LastUpdate)
+	err = database.ScanRow(row, s, "api_key", "api_key_shown", "credentials", "last_update")
 	if database.NoRows(err) {
 		s = nil
 		err = nil
@@ -104,7 +104,7 @@ func SelectSessions(ctx context.Context, driver *database.Driver) ([]*Session, e
 		s := &Session{
 			driver: driver,
 		}
-		err = rows.Scan(&s.ID, &s.APIKey, &s.APIKeyShown, &s.Credentials, &s.LastUpdate)
+		err = database.Scan(rows, s)
 		if err != nil {
 			return nil, err
 		}
@@ -136,7 +136,7 @@ func SelectSessionByAPIKey(ctx context.Context, driver *database.Driver, apiKey 
 		driver: driver,
 		APIKey: apiKey,
 	}
-	err = row.Scan(&s.ID, &s.APIKeyShown, &s.Credentials, &s.LastUpdate)
+	err = database.ScanRow(row, s, "id", "api_key_shown", "credentials", "last_update")
 	if database.NoRows(err) {
 		s = nil
 		err = nil
