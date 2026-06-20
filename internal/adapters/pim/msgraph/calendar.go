@@ -211,7 +211,7 @@ func (b *eventRequestBuilder) End(end *domain.TZTime) *eventRequestBuilder {
 			dateTime, timezone := marshalTZTime(*end)
 			endDateTime.SetDateTime(dateTime)
 			endDateTime.SetTimeZone(timezone)
-			b.Request.SetStart(endDateTime)
+			b.Request.SetEnd(endDateTime)
 		}
 	}
 	return b

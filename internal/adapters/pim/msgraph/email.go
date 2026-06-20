@@ -79,7 +79,7 @@ func (p *Provider) UpdateEmail(ctx context.Context, id string, update domain.Ema
 	if err != nil {
 		return nil, err
 	}
-	response, err := client.Me().Messages().Post(ctx, request, nil)
+	response, err := client.Me().Messages().ByMessageId(id).Patch(ctx, request, nil)
 	if err != nil {
 		return nil, fmt.Errorf("update email Graph API failure (cause: %w)", err)
 	}
