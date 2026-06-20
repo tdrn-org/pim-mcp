@@ -28,7 +28,7 @@ type Provider interface {
 	domain.Provider
 	Mount(server *httpserver.Instance)
 	LoginURL() *url.URL
-	CheckCredentials(ctx context.Context, credentials string) (*CredentialInfo, error)
+	CheckCredentials(ctx context.Context, credentials string) *CredentialInfo
 	RefreshCredentials(ctx context.Context, credentials string) (string, error)
 }
 

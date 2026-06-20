@@ -65,9 +65,8 @@ func (p *Provider) LoginURL() *url.URL {
 	return p.runtime.BaseURL()
 }
 
-func (p *Provider) CheckCredentials(ctx context.Context, credentials string) (*pim.CredentialInfo, error) {
-	info := &pim.CredentialInfo{}
-	return info, nil
+func (p *Provider) CheckCredentials(ctx context.Context, credentials string) *pim.CredentialInfo {
+	return &pim.CredentialInfo{Valid: true}
 }
 
 func (p *Provider) RefreshCredentials(ctx context.Context, credentials string) (string, error) {

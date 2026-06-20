@@ -23,6 +23,7 @@ import (
 )
 
 var ErrEntityNotFound error = errors.New("entity not found")
+var ErrAuthenticationRequired error = errors.New("authentication required")
 
 const (
 	NatureHome     string = "Home"

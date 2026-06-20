@@ -139,11 +139,7 @@ func (api *API) SessionGet(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	provider := api.runtime.Provider()
-	credentialInfo, err := provider.CheckCredentials(r.Context(), session.Credentials)
-	if err != nil {
-		api.sendError(w, r, http.StatusInternalServerError, err)
-		return
-	}
+	credentialInfo := provider.CheckCredentials(r.Context(), session.Credentials)
 	sessionInfo := &SessionInfo{
 		ProviderName: api.runtime.Provider().Name(),
 		APIKey:       apiKey,
