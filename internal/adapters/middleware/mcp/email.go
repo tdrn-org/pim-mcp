@@ -95,10 +95,10 @@ type EmailSummaryOutput struct {
 	From       NamedEmailAddressOutput   `json:"from" jsonschema:"The sender address of the email"`
 	To         []NamedEmailAddressOutput `json:"tos" jsonschema:"The TO: receiver addresses of the email"`
 	CC         []NamedEmailAddressOutput `json:"ccs" jsonschema:"The CC: receiver addresses of the email"`
+	Folder     string                    `json:"folder" jsonschema:"The parent folder ID of the email."`
 	ReceivedAt time.Time                 `json:"received_at" jsonschema:"The receive time of the email (RFC3339 format)."`
 	SentAt     time.Time                 `json:"sent_at" jsonschema:"The sent time of the email (RFC3339 format)."`
 	IsRead     bool                      `json:"is_read" jsonschema:"The read status of the email"`
-	Folder     *string                   `json:"folder,omitempty" jsonschema:"The parent folder ID of the email. null if not available."`
 }
 
 type EmailOutput struct {
@@ -108,11 +108,11 @@ type EmailOutput struct {
 	From       NamedEmailAddressOutput   `json:"from" jsonschema:"The sender address of the email"`
 	To         []NamedEmailAddressOutput `json:"tos" jsonschema:"The TO: receiver addresses of the email"`
 	CC         []NamedEmailAddressOutput `json:"ccs" jsonschema:"The CC: receiver addresses of the email"`
+	Folder     string                    `json:"folder" jsonschema:"The parent folder ID of the email."`
 	ReceivedAt time.Time                 `json:"received_at" jsonschema:"The receive time of the email (RFC3339 format)."`
 	SentAt     time.Time                 `json:"sent_at" jsonschema:"The sent time of the email (RFC3339 format)."`
 	IsRead     bool                      `json:"is_read" jsonschema:"The read status of the email"`
 	ThreadID   string                    `json:"thread_id" jsonschema:"The thread ID of the email"`
-	Folder     *string                   `json:"folder,omitempty" jsonschema:"The parent folder ID of the email. null if not available."`
 }
 
 func toEmailSummaryOutputs(emails []*domain.Email) *SearchEmailOutput {
@@ -124,10 +124,10 @@ func toEmailSummaryOutputs(emails []*domain.Email) *SearchEmailOutput {
 			From:       toNamedEmailAddressOutput(email.From),
 			To:         toNamedEmailAddressOutputs(email.To),
 			CC:         toNamedEmailAddressOutputs(email.CC),
+			Folder:     email.Folder,
 			ReceivedAt: email.ReceivedAt,
 			SentAt:     email.SentAt,
 			IsRead:     email.IsRead,
-			Folder:     email.Folder,
 		}
 		outputs = append(outputs, output)
 	}
@@ -142,11 +142,11 @@ func toEmailOutput(email *domain.Email) *EmailOutput {
 		From:       toNamedEmailAddressOutput(email.From),
 		To:         toNamedEmailAddressOutputs(email.To),
 		CC:         toNamedEmailAddressOutputs(email.CC),
+		Folder:     email.Folder,
 		ReceivedAt: email.ReceivedAt,
 		SentAt:     email.SentAt,
 		IsRead:     email.IsRead,
 		ThreadID:   email.ThreadID,
-		Folder:     email.Folder,
 	}
 	return output
 }

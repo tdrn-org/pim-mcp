@@ -34,7 +34,6 @@ type Email struct {
 	SentAt     time.Time
 	IsRead     bool
 	ThreadID   string
-	Folder     *string
 }
 
 func (e *Email) String() string {
