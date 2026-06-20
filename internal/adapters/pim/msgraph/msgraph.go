@@ -290,13 +290,13 @@ func (p *Provider) RefreshCredentials(ctx context.Context, credentials string) (
 		p.logger.Warn("discarding invalid credentials", slog.Any("err", err))
 		return "", nil
 	}
-	if !token.Valid() {
+	if !token.Valid() && token.RefreshToken != "" {
 		p.logger.Info("refreshing token...")
-		_, err := p.oauth2Config().TokenSource(ctx, &oauth2.Token{RefreshToken: token.RefreshToken}).Token()
-		if err != nil {
-			p.logger.Warn("failed to refresh token", slog.Any("err", err))
+		refreshedToken, err := p.oauth2Config().TokenSource(ctx, &oauth2.Token{RefreshToken: token.RefreshToken}).Token()
+		if err == nil {
+			token = refreshedToken
 		} else {
-			p.logger.Info("token refreshed")
+			p.logger.Warn("failed to refresh token", slog.Any("err", err))
 		}
 	}
 	credential, err := p.credentialCache.Get(ctx, token.AccessToken)
@@ -309,6 +309,13 @@ func (p *Provider) RefreshCredentials(ctx context.Context, credentials string) (
 		p.logger.Warn("discarding invalid credentials", slog.Any("err", err))
 		return "", nil
 	}
-	p.logger.Debug("credentials successfully refreshed")
-	return credentials, nil
+	refreshedCredentials, err := marshalToken(token)
+	if err != nil {
+		p.logger.Warn("failed to marshal refreshed credentials", slog.Any("err", err))
+		return "", nil
+	}
+	if refreshedCredentials != credentials {
+		p.logger.Info("credentials successfully refreshed")
+	}
+	return refreshedCredentials, nil
 }
