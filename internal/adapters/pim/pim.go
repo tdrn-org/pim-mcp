@@ -29,7 +29,7 @@ type Provider interface {
 	Mount(server *httpserver.Instance)
 	LoginURL() *url.URL
 	CheckCredentials(ctx context.Context, credentials string) *CredentialInfo
-	RefreshCredentials(ctx context.Context, credentials string) (string, error)
+	RefreshCredentials(ctx context.Context, credentials string) string
 }
 
 type CredentialInfo struct {

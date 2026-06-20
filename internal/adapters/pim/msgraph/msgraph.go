@@ -76,6 +76,7 @@ func NewProvider(runtime Runtime, cfg *config.ProviderConfig) (*Provider, error)
 }
 
 func (p *Provider) createOBOCredential(ctx context.Context, token string) (*azidentity.OnBehalfOfCredential, error) {
+	p.logger.Info("obtaining OBO credentials...")
 	credential, err := azidentity.NewOnBehalfOfCredentialWithSecret(p.cfg.MSGraph.TenantID, p.cfg.MSGraph.ClientID, token, p.cfg.MSGraph.ClientSecret, nil)
 	if err != nil {
 		p.logger.Warn("failed to create OBO credential", slog.Any("err", err))
@@ -281,14 +282,14 @@ func (p *Provider) CheckCredentials(ctx context.Context, credentials string) *pi
 	return info
 }
 
-func (p *Provider) RefreshCredentials(ctx context.Context, credentials string) (string, error) {
+func (p *Provider) RefreshCredentials(ctx context.Context, credentials string) string {
 	if credentials == "" {
-		return credentials, nil
+		return credentials
 	}
 	token, err := unmarshalToken(credentials)
 	if err != nil {
 		p.logger.Warn("discarding invalid credentials", slog.Any("err", err))
-		return "", nil
+		return ""
 	}
 	if !token.Valid() && token.RefreshToken != "" {
 		p.logger.Info("refreshing token...")
@@ -302,20 +303,20 @@ func (p *Provider) RefreshCredentials(ctx context.Context, credentials string) (
 	credential, err := p.credentialCache.Get(ctx, token.AccessToken)
 	if err != nil {
 		p.logger.Warn("discarding outdated credentials")
-		return "", nil
+		return ""
 	}
 	_, err = credential.GetToken(ctx, graphTokenRequestOptions)
 	if err != nil {
 		p.logger.Warn("discarding invalid credentials", slog.Any("err", err))
-		return "", nil
+		return ""
 	}
 	refreshedCredentials, err := marshalToken(token)
 	if err != nil {
 		p.logger.Warn("failed to marshal refreshed credentials", slog.Any("err", err))
-		return "", nil
+		return ""
 	}
 	if refreshedCredentials != credentials {
 		p.logger.Info("credentials successfully refreshed")
 	}
-	return refreshedCredentials, nil
+	return refreshedCredentials
 }

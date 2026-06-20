@@ -69,6 +69,6 @@ func (p *Provider) CheckCredentials(ctx context.Context, credentials string) *pi
 	return &pim.CredentialInfo{Valid: true}
 }
 
-func (p *Provider) RefreshCredentials(ctx context.Context, credentials string) (string, error) {
-	return credentials, nil
+func (p *Provider) RefreshCredentials(ctx context.Context, credentials string) string {
+	return credentials
 }

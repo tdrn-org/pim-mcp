@@ -275,17 +275,13 @@ func (s *Server) runJobs() {
 	}
 	for _, session := range sessions {
 		if session.Credentials != "" {
-			credentials, err := s.provider.RefreshCredentials(ctx, session.Credentials)
-			if err == nil {
-				if session.Credentials != credentials {
-					session.Credentials = credentials
-					err = session.Update(ctx)
-					if err != nil {
-						s.logger.Error("failed update session credentials", slog.Any("err", err))
-					}
+			credentials := s.provider.RefreshCredentials(ctx, session.Credentials)
+			if session.Credentials != credentials {
+				session.Credentials = credentials
+				err = session.Update(ctx)
+				if err != nil {
+					s.logger.Error("failed update session credentials", slog.Any("err", err))
 				}
-			} else {
-				s.logger.Error("failed refresh session credentials", slog.Any("err", err))
 			}
 		}
 	}
