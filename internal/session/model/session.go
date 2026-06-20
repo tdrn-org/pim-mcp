@@ -34,7 +34,7 @@ type Session struct {
 	LastUpdate  int64
 }
 
-const sessionAPIKeyLenght int = 64
+const sessionAPIKeyLenght int = 48
 const sessionAPIKeyPrefix string = "pim_mcp_"
 
 func NewSession(driver *database.Driver) *Session {
