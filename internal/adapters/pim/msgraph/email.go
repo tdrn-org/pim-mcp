@@ -19,11 +19,13 @@ package msgraph
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"slices"
 	"strings"
 	"time"
 
 	kiota "github.com/microsoft/kiota-abstractions-go"
+	msgraphsdkgo "github.com/microsoftgraph/msgraph-sdk-go"
 	"github.com/microsoftgraph/msgraph-sdk-go/models"
 	"github.com/microsoftgraph/msgraph-sdk-go/users"
 	"github.com/tdrn-org/pim-mcp/internal/application"
@@ -48,7 +50,7 @@ func (p *Provider) SearchEmails(ctx context.Context, filter domain.EmailFilter) 
 	}
 	emails := make([]*domain.Email, 0)
 	for _, responseItem := range response.GetValue() {
-		email := p.emailFromResponse(responseItem)
+		email := p.emailFromResponse(ctx, client, responseItem)
 		if !email.Empty() {
 			emails = append(emails, email)
 		}
@@ -66,7 +68,7 @@ func (p *Provider) GetEmail(ctx context.Context, id string) (*domain.Email, erro
 	if err != nil {
 		return nil, fmt.Errorf("get email Graph API failure (cause: %w)", err)
 	}
-	email := p.emailFromResponse(response)
+	email := p.emailFromResponse(ctx, client, response)
 	return email, nil
 }
 
@@ -83,11 +85,11 @@ func (p *Provider) UpdateEmail(ctx context.Context, id string, update domain.Ema
 	if err != nil {
 		return nil, fmt.Errorf("update email Graph API failure (cause: %w)", err)
 	}
-	email := p.emailFromResponse(response)
+	email := p.emailFromResponse(ctx, client, response)
 	return email, nil
 }
 
-func (p *Provider) emailFromResponse(model models.Messageable) *domain.Email {
+func (p *Provider) emailFromResponse(ctx context.Context, client *msgraphsdkgo.GraphServiceClient, model models.Messageable) *domain.Email {
 	body := model.GetUniqueBody()
 	if body == nil {
 		body = model.GetBody()
@@ -96,6 +98,18 @@ func (p *Provider) emailFromResponse(model models.Messageable) *domain.Email {
 	if body != nil {
 		content = *body.GetContent()
 	}
+	folder := ptrString(model.GetParentFolderId())
+	if folder != "" {
+		folderModel, err := client.Me().MailFolders().ByMailFolderId(folder).Get(ctx, nil)
+		if err == nil {
+			displayName := folderModel.GetDisplayName()
+			if displayName != nil {
+				folder = *displayName
+			}
+		} else {
+			p.logger.Warn("failed to retrieve folder name", slog.Any("err", err))
+		}
+	}
 	return &domain.Email{
 		ID:         ptrString(model.GetId()),
 		Subject:    ptrString(model.GetSubject()),
@@ -103,6 +117,7 @@ func (p *Provider) emailFromResponse(model models.Messageable) *domain.Email {
 		From:       p.addressFromResponse(model.GetFrom()),
 		To:         p.addressesFromResponse(model.GetToRecipients()),
 		CC:         p.addressesFromResponse(model.GetCcRecipients()),
+		Folder:     folder,
 		ReceivedAt: ptrTime(model.GetReceivedDateTime()),
 		SentAt:     ptrTime(model.GetSentDateTime()),
 		IsRead:     ptrBool(model.GetIsRead(), true),

@@ -29,6 +29,7 @@ type Email struct {
 	From       NamedEmailAddress
 	To         []NamedEmailAddress
 	CC         []NamedEmailAddress
+	Folder     string
 	ReceivedAt time.Time
 	SentAt     time.Time
 	IsRead     bool
