@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { getSession, deleteSession, loginOAuth2 } from '$lib/api';
+		import { getSession, deleteSession, loginOAuth2, reconnectOAuth2 } from '$lib/api';
 	import type { SessionInfo } from '$lib/types';
 	import ApiKeyModal from '$lib/ApiKeyModal.svelte';
 
@@ -111,22 +111,33 @@
 		</div>
 	{:else}
 		<div class="flex flex-col items-center gap-6 text-center max-w-md w-full">
-			<div class="rounded-full bg-slate-800 p-4">
-				<svg class="h-12 w-12 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+			<div class="rounded-full bg-amber-500/10 p-4">
+				<svg class="h-12 w-12 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
 					<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
 				</svg>
 			</div>
-			<h2 class="text-2xl font-semibold text-slate-100">PIM MCP Server</h2>
+			<h2 class="text-2xl font-semibold text-slate-100">Re-connect Required</h2>
 			<p class="text-slate-400">
-				Connect to <span class="text-brand-400 font-medium">{session?.provider_name ?? 'your provider'}</span> to enable agent access to your personal information.
+				Your session with <span class="text-brand-400 font-medium">{session?.provider_name ?? 'your provider'}</span> has expired or credentials were lost after a server restart.
+			</p>
+			<p class="text-slate-500 text-sm">
+				Re-connecting preserves your API key — your agent does not need to be reconfigured.
 			</p>
 
-			<!-- OAuth2 Login -->
+			<!-- Re-connect -->
 			<button
-				onclick={handleOAuth2Login}
+				onclick={() => reconnectOAuth2()}
 				class="w-full rounded-lg bg-brand-500 px-6 py-3 text-sm font-medium text-white hover:bg-brand-600 transition-colors shadow-lg shadow-brand-500/20"
 			>
-				Connect to Provider
+				Re-connect to Provider
+			</button>
+
+			<!-- Disconnect fallback -->
+			<button
+				onclick={handleLogout}
+				class="rounded-lg bg-slate-800 px-5 py-2.5 text-sm text-slate-400 hover:bg-slate-700 hover:text-slate-300 transition-colors"
+			>
+				Disconnect
 			</button>
 		</div>
 	{/if}

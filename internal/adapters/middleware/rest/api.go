@@ -53,7 +53,8 @@ type CredentialInfo struct {
 }
 
 type loginRequest struct {
-	APIKey string `json:"api_key"`
+	APIKey    string `json:"api_key"`
+	Reconnect bool   `json:"reconnect,omitempty"`
 }
 
 //	@title			PIM MCP Server REST API
@@ -214,6 +215,16 @@ func (api *API) LoginPost(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		api.runtime.SessionCookie().Set(w, session.ID, true)
+		if req.Reconnect {
+			// Re-connect: redirect to OAuth2 to refresh credentials, session + API key stay
+			loginURL, err := api.runtime.LoginURL(r.Context())
+			if err != nil {
+				api.sendError(w, r, http.StatusInternalServerError, err)
+				return
+			}
+			http.Redirect(w, r, loginURL.String(), http.StatusFound)
+			return
+		}
 		http.Redirect(w, r, api.runtime.BaseURL().JoinPath("/session").String(), http.StatusFound)
 		return
 	}
@@ -223,7 +234,16 @@ func (api *API) LoginPost(w http.ResponseWriter, r *http.Request) {
 	if id != "" {
 		session, err := api.runtime.LookupSession(r.Context(), id)
 		if err == nil && session != nil {
-			// Existing session — redirect to /session
+			// Existing session — redirect to OAuth2 if re-connect, else /session
+			if req.Reconnect {
+				loginURL, err := api.runtime.LoginURL(r.Context())
+				if err != nil {
+					api.sendError(w, r, http.StatusInternalServerError, err)
+					return
+				}
+				http.Redirect(w, r, loginURL.String(), http.StatusFound)
+				return
+			}
 			http.Redirect(w, r, api.runtime.BaseURL().JoinPath("/session").String(), http.StatusFound)
 			return
 		}
