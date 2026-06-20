@@ -42,3 +42,21 @@ export function loginOAuth2(): void {
 	form.submit();
 	document.body.removeChild(form);
 }
+
+/** Re-connect existing session via OAuth2 using the session cookie — keeps API key, only refreshes credentials. */
+export function reconnectOAuth2(): void {
+	const form = document.createElement('form');
+	form.method = 'POST';
+	form.action = `${BASE}/login`;
+	form.style.display = 'none';
+
+	const input = document.createElement('input');
+	input.type = 'hidden';
+	input.name = 'reconnect';
+	input.value = 'true';
+	form.appendChild(input);
+
+	document.body.appendChild(form);
+	form.submit();
+	document.body.removeChild(form);
+}
