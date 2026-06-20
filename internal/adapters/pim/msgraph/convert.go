@@ -32,7 +32,7 @@ func marshalTZTime(tzTime domain.TZTime) (*string, *string) {
 	dateTime := tzTime.DateTime.Format(dateTimeLayoutLong)
 	timezone := tzTime.Timezone
 	if timezone == "" {
-		timezone = tzTime.DateTime.Location().String()
+		timezone = "UTC"
 	}
 	return &dateTime, &timezone
 }
