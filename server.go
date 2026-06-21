@@ -48,10 +48,9 @@ type Server struct {
 	cfg                 *config.Config
 	store               *session.Store
 	httpServer          *httpserver.Instance
+	baseURL             *url.URL
 	sessionCookie       *httpserver.CookieHandler
 	provider            pim.Provider
-	api                 *rest.API
-	baseURL             *url.URL
 	jobTicker           *time.Ticker
 	jobTickerShutdown   chan any
 	jobTickerShutdownWG sync.WaitGroup
@@ -220,15 +219,13 @@ func (s *Server) startMCPServer(ctx context.Context, cfg *config.Config) error {
 	}
 	s.provider = provider
 	s.provider.Mount(s.httpServer)
-	handler := mcp.NewHandler(runtime, s.provider)
-	s.httpServer.Handle("/mcp", handler)
+	s.httpServer.Handle(mcp.Path, mcp.NewHandler(runtime, s.provider))
 	return nil
 }
 
 func (s *Server) startRestAPI(_ context.Context, _ *config.Config) error {
 	runtime := &serverRuntime{server: s}
-	s.api = rest.NewAPI(runtime)
-	s.api.Mount(s.httpServer)
+	rest.NewAPI(runtime).Mount(s.httpServer)
 	return nil
 }
 

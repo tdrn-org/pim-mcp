@@ -29,6 +29,8 @@ import (
 	"github.com/tdrn-org/pim-mcp/internal/session/model"
 )
 
+const Path string = "/mcp"
+
 type Runtime interface {
 	BaseURL() *url.URL
 	Logger() *slog.Logger
