@@ -46,6 +46,17 @@ func (p *Provider) GetEmail(ctx context.Context, id string) (*domain.Email, erro
 	return email, nil
 }
 
+func (p *Provider) UpdateEmail(ctx context.Context, id string, update domain.EmailUpdate) (*domain.Email, error) {
+	email, ok := emailData[id]
+	if !ok {
+		return nil, domain.ErrEntityNotFound
+	}
+	if update.IsRead != nil {
+		email.IsRead = *update.IsRead
+	}
+	return email, nil
+}
+
 func filterByUnreadOnly(in iter.Seq[*domain.Email], unreadOnly bool) iter.Seq[*domain.Email] {
 	if !unreadOnly {
 		return in
@@ -89,6 +100,7 @@ var emailData map[string]*domain.Email = map[string]*domain.Email{
 		ReceivedAt: time.Date(2026, 6, 15, 9, 30, 0, 0, time.UTC),
 		SentAt:     time.Date(2026, 6, 15, 9, 28, 0, 0, time.UTC),
 		IsRead:     false,
+		Folder:     "Inbox",
 		ThreadID:   "thread-w1",
 	},
 	"e2": {
@@ -105,6 +117,7 @@ var emailData map[string]*domain.Email = map[string]*domain.Email{
 		ReceivedAt: time.Date(2026, 6, 14, 16, 45, 0, 0, time.UTC),
 		SentAt:     time.Date(2026, 6, 14, 16, 42, 0, 0, time.UTC),
 		IsRead:     true,
+		Folder:     "Inbox",
 		ThreadID:   "thread-b1",
 	},
 	"e3": {
@@ -119,6 +132,7 @@ var emailData map[string]*domain.Email = map[string]*domain.Email{
 		ReceivedAt: time.Date(2026, 6, 13, 8, 15, 0, 0, time.UTC),
 		SentAt:     time.Date(2026, 6, 13, 8, 12, 0, 0, time.UTC),
 		IsRead:     false,
+		Folder:     "Inbox",
 		ThreadID:   "thread-i1",
 	},
 	"e4": {
@@ -133,6 +147,7 @@ var emailData map[string]*domain.Email = map[string]*domain.Email{
 		ReceivedAt: time.Date(2026, 6, 10, 14, 0, 0, 0, time.UTC),
 		SentAt:     time.Date(2026, 6, 10, 13, 55, 0, 0, time.UTC),
 		IsRead:     true,
+		Folder:     "Inbox",
 		ThreadID:   "thread-t1",
 	},
 	"e5": {

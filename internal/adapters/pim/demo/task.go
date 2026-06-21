@@ -23,6 +23,7 @@ import (
 	"slices"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/tdrn-org/pim-mcp/internal/application"
 	"github.com/tdrn-org/pim-mcp/internal/domain"
 )
@@ -45,6 +46,64 @@ func (p *Provider) GetTask(ctx context.Context, id string) (*domain.Task, error)
 		return nil, domain.ErrEntityNotFound
 	}
 	return task, nil
+}
+
+func (p *Provider) CreateTask(ctx context.Context, create domain.TaskCreate) (*domain.Task, error) {
+	now := time.Now().UTC()
+	task := &domain.Task{
+		ID:          uuid.NewString(),
+		Title:       create.Title,
+		Description: emptyIfNil(create.Description),
+		Status:      ptrVal(create.Status, domain.StatusTodo),
+		Priority:    ptrVal(create.Priority, domain.PriorityMedium),
+		DueAt:       create.DueAt,
+		CreatedAt:   now,
+		UpdatedAt:   now,
+	}
+	taskData[task.ID] = task
+	return task, nil
+}
+
+func (p *Provider) UpdateTask(ctx context.Context, id string, update domain.TaskUpdate) (*domain.Task, error) {
+	task, ok := taskData[id]
+	if !ok {
+		return nil, domain.ErrEntityNotFound
+	}
+	if update.Title != nil {
+		task.Title = *update.Title
+	}
+	if update.Description != nil {
+		task.Description = *update.Description
+	}
+	if update.Status != nil {
+		task.Status = *update.Status
+	}
+	if update.Priority != nil {
+		task.Priority = *update.Priority
+	}
+	if update.DueAt != nil {
+		if update.DueAt.Empty() {
+			task.DueAt = nil
+		} else {
+			task.DueAt = update.DueAt
+		}
+	}
+	task.UpdatedAt = time.Now().UTC()
+	return task, nil
+}
+
+func emptyIfNil(s *string) string {
+	if s == nil {
+		return ""
+	}
+	return *s
+}
+
+func ptrVal[T any](p *T, defaultVal T) T {
+	if p == nil {
+		return defaultVal
+	}
+	return *p
 }
 
 func filterByStatus(in iter.Seq[*domain.Task], status *domain.TaskStatus) iter.Seq[*domain.Task] {

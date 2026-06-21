@@ -23,6 +23,7 @@ import (
 	"slices"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/tdrn-org/pim-mcp/internal/application"
 	"github.com/tdrn-org/pim-mcp/internal/domain"
 )
@@ -43,6 +44,25 @@ func (p *Provider) GetEvent(ctx context.Context, id string) (*domain.Event, erro
 	if !ok {
 		return nil, domain.ErrEntityNotFound
 	}
+	return event, nil
+}
+
+func (p *Provider) CreateEvent(ctx context.Context, create domain.EventCreate) (*domain.Event, error) {
+	now := time.Now().UTC()
+	event := &domain.Event{
+		ID:          uuid.NewString(),
+		Title:       create.Title,
+		Description: emptyIfNil(create.Description),
+		Start:       create.Start,
+		End:         create.End,
+		Location:    emptyIfNil(create.Location),
+		Organizer:   domain.NewNamedEmailAddress("demo@example.org", "Demo User"),
+		Attendees:   []domain.NamedEmailAddress{},
+		IsAllDay:    ptrVal(create.IsAllDay, false),
+		Status:      domain.EventStatusConfirmed,
+		UpdatedAt:   now,
+	}
+	eventData[event.ID] = event
 	return event, nil
 }
 
