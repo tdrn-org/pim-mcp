@@ -161,7 +161,7 @@ func (p *Provider) taskDateTimeFromResponse(model models.DateTimeTimeZoneable) *
 	if model == nil {
 		return nil
 	}
-	parsed := unmarshalTZTime(model.GetDateTime(), model.GetTimeZone(), p.cfg.MSGraph.DefaultTimeLocation.Location)
+	parsed := unmarshalTZTime(model.GetDateTime(), model.GetTimeZone())
 	if parsed.Empty() {
 		return nil
 	}

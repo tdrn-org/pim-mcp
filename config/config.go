@@ -22,7 +22,6 @@ import (
 	"log/slog"
 	"net/netip"
 	"net/url"
-	"time"
 
 	"github.com/BurntSushi/toml"
 )
@@ -145,35 +144,4 @@ func (specs NetworkSpecs) Prefixes() []netip.Prefix {
 		networks = append(networks, spec.Prefix)
 	}
 	return networks
-}
-
-type TimeLocationSpec struct {
-	*time.Location
-}
-
-func (spec *TimeLocationSpec) Value() string {
-	if spec.Location == nil {
-		return ""
-	}
-	return spec.String()
-}
-
-func (spec *TimeLocationSpec) MarshalTOML() ([]byte, error) {
-	return []byte(`"` + spec.Value() + `"`), nil
-}
-
-func (spec *TimeLocationSpec) UnmarshalTOML(value any) error {
-	locationString, ok := value.(string)
-	if !ok {
-		return fmt.Errorf("unexpected time location type %v", value)
-	}
-	if locationString == "" {
-		return nil
-	}
-	parsedLocation, err := time.LoadLocation(locationString)
-	if err != nil {
-		return fmt.Errorf("invalid time location: '%s' (cause: %w)", locationString, err)
-	}
-	spec.Location = parsedLocation
-	return nil
 }

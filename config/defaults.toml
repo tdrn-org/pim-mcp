@@ -38,5 +38,4 @@ access_mode = "read_only"
 client_id = ""
 client_secret = ""
 tenant_id = ""
-default_time_location = "UTC"
 sensitivity_limit = 0

@@ -111,7 +111,7 @@ func (p *Provider) eventFromResponse(model models.Eventable) *domain.Event {
 }
 
 func (p *Provider) tzTimeFromResponse(model models.DateTimeTimeZoneable) domain.TZTime {
-	return unmarshalTZTime(model.GetDateTime(), model.GetTimeZone(), p.cfg.MSGraph.DefaultTimeLocation.Location)
+	return unmarshalTZTime(model.GetDateTime(), model.GetTimeZone())
 }
 
 func (p *Provider) attendeesFromResponse(models []models.Attendeeable) []domain.NamedEmailAddress {

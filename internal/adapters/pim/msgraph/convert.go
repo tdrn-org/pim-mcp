@@ -28,19 +28,62 @@ import (
 const dateTimeLayoutLong string = "2006-01-02T15:04:05.0000000"
 const dateTimeLayoutShort string = "2006-01-02T15:04:05"
 
+var windowsTimezoneMapping = map[string]string{
+	"UTC":                          "UTC",
+	"GMT Standard Time":            "Europe/London",
+	"W. Europe Standard Time":      "Europe/Berlin",
+	"Central Europe Standard Time": "Europe/Belgrade",
+	"E. Europe Standard Time":      "Europe/Helsinki",
+	"Romance Standard Time":        "Europe/Paris",
+	"Russian Standard Time":        "Europe/Moscow",
+	"Pacific Standard Time":        "America/Los_Angeles",
+	"Mountain Standard Time":       "America/Denver",
+	"Central Standard Time":        "America/Chicago",
+	"Eastern Standard Time":        "America/New_York",
+	"China Standard Time":          "Asia/Shanghai",
+	"Tokyo Standard Time":          "Asia/Tokyo",
+}
+
+var ianaTimezoneMapping = map[string]string{
+	"UTC":                 "UTC",
+	"Europe/London":       "GMT Standard Time",
+	"Europe/Berlin":       "W. Europe Standard Time",
+	"Europe/Vienna":       "W. Europe Standard Time",
+	"Europe/Zurich":       "W. Europe Standard Time",
+	"Europe/Belgrade":     "Central Europe Standard Time",
+	"Europe/Helsinki":     "E. Europe Standard Time",
+	"Europe/Paris":        "Romance Standard Time",
+	"Europe/Moscow":       "Russian Standard Time",
+	"America/Los_Angeles": "Pacific Standard Time",
+	"America/Denver":      "Mountain Standard Time",
+	"America/Chicago":     "Central Standard Time",
+	"America/New_York":    "Eastern Standard Time",
+	"Asia/Shanghai":       "China Standard Time",
+	"Asia/Tokyo":          "Tokyo Standard Time",
+}
+
 func marshalTZTime(tzTime domain.TZTime) (*string, *string) {
 	dateTime := tzTime.DateTime.Format(dateTimeLayoutLong)
 	timezone := tzTime.Timezone
 	if timezone == "" {
-		timezone = "UTC"
+		ianaTimezone, mapped := ianaTimezoneMapping[time.Local.String()]
+		if mapped {
+			timezone = ianaTimezone
+		} else {
+			timezone = "UTC"
+		}
 	}
 	return &dateTime, &timezone
 }
 
-func unmarshalTZTime(dateTime, timezone *string, defaultLocation *time.Location) domain.TZTime {
-	location := defaultLocation
+func unmarshalTZTime(dateTime, timezone *string) domain.TZTime {
+	location := time.Local
 	if timezone != nil && *timezone != "" {
-		timezoneLocation, err := time.LoadLocation(*timezone)
+		ianaTimezone, mapped := windowsTimezoneMapping[*timezone]
+		if !mapped {
+			ianaTimezone = *timezone
+		}
+		timezoneLocation, err := time.LoadLocation(ianaTimezone)
 		if err == nil {
 			location = timezoneLocation
 		}

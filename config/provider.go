@@ -30,11 +30,10 @@ type ProviderConfig struct {
 }
 
 type MSGraphConfig struct {
-	ClientID            string           `toml:"client_id"`
-	ClientSecret        string           `toml:"client_secret"`
-	TenantID            string           `toml:"tenant_id"`
-	DefaultTimeLocation TimeLocationSpec `toml:"default_time_location"`
-	SensitivityLimit    int              `toml:"sensitivity_limit"`
+	ClientID         string `toml:"client_id"`
+	ClientSecret     string `toml:"client_secret"`
+	TenantID         string `toml:"tenant_id"`
+	SensitivityLimit int    `toml:"sensitivity_limit"`
 }
 
 type ProviderAdapter string
