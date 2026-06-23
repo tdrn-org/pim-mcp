@@ -36,6 +36,7 @@ import (
 	"github.com/tdrn-org/pim-mcp/internal/adapters/pim"
 	"github.com/tdrn-org/pim-mcp/internal/domain"
 	"github.com/tdrn-org/pim-mcp/internal/session/model"
+	"github.com/thlib/go-timezone-local/tzlocal"
 	"golang.org/x/oauth2"
 )
 
@@ -68,10 +69,18 @@ type credentialHolder struct {
 }
 
 func NewProvider(runtime Runtime, cfg *config.ProviderConfig) (*Provider, error) {
+	timezone, err := tzlocal.RuntimeTZ()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get runtime timezone (cause: %w)", err)
+	}
+	timeLocation, err := time.LoadLocation(timezone)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load runtime timezone '%s' (cause: %w)", timezone, err)
+	}
 	provider := &Provider{
 		runtime:      runtime,
 		cfg:          cfg,
-		timeLocation: time.Local,
+		timeLocation: timeLocation,
 		logger:       slog.With(slog.String("provider", Name)),
 	}
 	credentialCache, err := memory.NewKeyValue(0, credentialCacheTTL, provider.loadSessionCredential)

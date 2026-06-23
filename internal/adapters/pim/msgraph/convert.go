@@ -23,6 +23,7 @@ import (
 
 	"github.com/microsoftgraph/msgraph-sdk-go/models"
 	"github.com/tdrn-org/pim-mcp/internal/domain"
+	"github.com/thlib/go-timezone-local/tzlocal"
 )
 
 const dateTimeLayoutLong string = "2006-01-02T15:04:05.0000000"
@@ -44,15 +45,6 @@ var windowsTimezoneMapping = map[string]string{
 	"Tokyo Standard Time":          "Asia/Tokyo",
 }
 
-func mapWindowsTimezoneToLocation(timezone string) (*time.Location, bool) {
-	mappedTimezone, exists := windowsTimezoneMapping[timezone]
-	if !exists {
-		return nil, false
-	}
-	location, err := time.LoadLocation(mappedTimezone)
-	return location, err == nil
-}
-
 var ianaTimezoneMapping = map[string]string{
 	"UTC":                 "UTC",
 	"Europe/London":       "GMT Standard Time",
@@ -72,7 +64,7 @@ var ianaTimezoneMapping = map[string]string{
 }
 
 func mapLocationToWindowsTimezone(location *time.Location) (string, bool) {
-	windowsTimezone, exists := windowsTimezoneMapping[location.String()]
+	windowsTimezone, exists := ianaTimezoneMapping[location.String()]
 	return windowsTimezone, exists
 }
 
@@ -80,9 +72,13 @@ func marshalTZTime(tzTime domain.TZTime) (*string, *string) {
 	dateTime := tzTime.DateTime.Format(dateTimeLayoutLong)
 	timezone := tzTime.Timezone
 	if timezone == "" {
-		ianaTimezone, mapped := ianaTimezoneMapping[time.Local.String()]
+		runtimeTimezone, err := tzlocal.RuntimeTZ()
+		if err != nil {
+			runtimeTimezone = "UTC"
+		}
+		windowsTimezone, mapped := ianaTimezoneMapping[runtimeTimezone]
 		if mapped {
-			timezone = ianaTimezone
+			timezone = windowsTimezone
 		} else {
 			timezone = "UTC"
 		}
@@ -90,8 +86,7 @@ func marshalTZTime(tzTime domain.TZTime) (*string, *string) {
 	return &dateTime, &timezone
 }
 
-func unmarshalTZTime(dateTime, timezone *string) domain.TZTime {
-	location := time.Local
+func unmarshalTZTime(dateTime, timezone *string, location *time.Location) domain.TZTime {
 	if timezone != nil && *timezone != "" {
 		ianaTimezone, mapped := windowsTimezoneMapping[*timezone]
 		if !mapped {

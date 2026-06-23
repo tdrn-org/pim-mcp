@@ -160,7 +160,7 @@ func (p *Provider) taskDateTimeFromResponse(model models.DateTimeTimeZoneable) *
 	if model == nil {
 		return nil
 	}
-	parsed := unmarshalTZTime(model.GetDateTime(), model.GetTimeZone())
+	parsed := unmarshalTZTime(model.GetDateTime(), model.GetTimeZone(), p.timeLocation)
 	if parsed.Empty() {
 		return nil
 	}
