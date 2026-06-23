@@ -21,7 +21,6 @@ import (
 	"fmt"
 	"slices"
 
-	kiota "github.com/microsoft/kiota-abstractions-go"
 	"github.com/microsoftgraph/msgraph-sdk-go/models"
 	"github.com/microsoftgraph/msgraph-sdk-go/users"
 	"github.com/tdrn-org/pim-mcp/internal/application"
@@ -146,8 +145,7 @@ func (p *Provider) postalAddressFromResponse(model models.PhysicalAddressable, n
 
 func (p *Provider) contactFilterRequestConfig(filter domain.ContactFilter) *users.ItemContactsRequestBuilderGetRequestConfiguration {
 	search, limit := standardFilterPtr(filter.StandardFilter)
-	headers := &kiota.RequestHeaders{}
-	headers.Add("ConsistencyLevel", "eventual")
+	headers := newHeaders().WithDefaults().Headers()
 	requestConfig := &users.ItemContactsRequestBuilderGetRequestConfiguration{
 		QueryParameters: &users.ItemContactsRequestBuilderGetQueryParameters{
 			Search: search,

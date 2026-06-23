@@ -180,9 +180,7 @@ func (p *Provider) emailFilterRequestConfig(filter domain.EmailFilter) *users.It
 	if len(filterParts) > 0 {
 		filterParam = stringPtr(strings.Join(filterParts, " and "))
 	}
-	headers := &kiota.RequestHeaders{}
-	headers.Add("ConsistencyLevel", "eventual")
-	headers.Add("Prefer", "outlook.body-content-type=\"text\"")
+	headers := newHeaders().WithDefaults().WithPreferTextContentType().Headers()
 	requestConfig := &users.ItemMessagesRequestBuilderGetRequestConfiguration{
 		QueryParameters: &users.ItemMessagesRequestBuilderGetQueryParameters{
 			Search: search,

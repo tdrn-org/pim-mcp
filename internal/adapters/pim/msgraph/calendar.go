@@ -22,7 +22,6 @@ import (
 	"slices"
 	"time"
 
-	kiota "github.com/microsoft/kiota-abstractions-go"
 	"github.com/microsoftgraph/msgraph-sdk-go/models"
 	"github.com/microsoftgraph/msgraph-sdk-go/users"
 	"github.com/tdrn-org/pim-mcp/internal/application"
@@ -150,9 +149,7 @@ func (p *Provider) eventFilterRequestConfig(filter domain.EventFilter) *users.It
 	} else {
 		end = nowUTC.Add(7 * 24 * time.Hour).Format(time.RFC3339)
 	}
-	headers := &kiota.RequestHeaders{}
-	headers.Add("ConsistencyLevel", "eventual")
-	headers.Add("Prefer", "outlook.body-content-type=\"text\"")
+	headers := newHeaders().WithDefaults().WithPreferTextContentType().WithPreferTimezone(p.timeLocation).Headers()
 	requestConfig := &users.ItemCalendarViewRequestBuilderGetRequestConfiguration{
 		QueryParameters: &users.ItemCalendarViewRequestBuilderGetQueryParameters{
 			Search:        search,

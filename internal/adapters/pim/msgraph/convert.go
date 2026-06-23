@@ -44,6 +44,15 @@ var windowsTimezoneMapping = map[string]string{
 	"Tokyo Standard Time":          "Asia/Tokyo",
 }
 
+func mapWindowsTimezoneToLocation(timezone string) (*time.Location, bool) {
+	mappedTimezone, exists := windowsTimezoneMapping[timezone]
+	if !exists {
+		return nil, false
+	}
+	location, err := time.LoadLocation(mappedTimezone)
+	return location, err == nil
+}
+
 var ianaTimezoneMapping = map[string]string{
 	"UTC":                 "UTC",
 	"Europe/London":       "GMT Standard Time",
@@ -60,6 +69,11 @@ var ianaTimezoneMapping = map[string]string{
 	"America/New_York":    "Eastern Standard Time",
 	"Asia/Shanghai":       "China Standard Time",
 	"Asia/Tokyo":          "Tokyo Standard Time",
+}
+
+func mapLocationToWindowsTimezone(location *time.Location) (string, bool) {
+	windowsTimezone, exists := windowsTimezoneMapping[location.String()]
+	return windowsTimezone, exists
 }
 
 func marshalTZTime(tzTime domain.TZTime) (*string, *string) {

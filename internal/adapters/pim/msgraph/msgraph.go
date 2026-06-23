@@ -57,15 +57,17 @@ const credentialCacheTTL time.Duration = time.Hour
 type Provider struct {
 	runtime         Runtime
 	cfg             *config.ProviderConfig
+	timeLocation    *time.Location
 	credentialCache cache.KeyValue[string, *azidentity.OnBehalfOfCredential]
 	logger          *slog.Logger
 }
 
 func NewProvider(runtime Runtime, cfg *config.ProviderConfig) (*Provider, error) {
 	provider := &Provider{
-		runtime: runtime,
-		cfg:     cfg,
-		logger:  slog.With(slog.String("provider", Name)),
+		runtime:      runtime,
+		cfg:          cfg,
+		timeLocation: time.Local,
+		logger:       slog.With(slog.String("provider", Name)),
 	}
 	credentialCache, err := memory.NewKeyValue(0, credentialCacheTTL, provider.createOBOCredential)
 	if err != nil {

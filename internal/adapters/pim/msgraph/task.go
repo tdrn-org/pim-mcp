@@ -22,7 +22,6 @@ import (
 	"slices"
 	"time"
 
-	kiota "github.com/microsoft/kiota-abstractions-go"
 	msgraphsdk "github.com/microsoftgraph/msgraph-sdk-go"
 	"github.com/microsoftgraph/msgraph-sdk-go/models"
 	"github.com/microsoftgraph/msgraph-sdk-go/users"
@@ -214,9 +213,7 @@ func (p *Provider) taskFilterRequestConfig(filter domain.TaskFilter) *users.Item
 		dueBefore = nowUTC.Add(7 * 24 * time.Hour).Format(time.RFC3339)
 	}
 	filterParam := fmt.Sprintf("(dueDateTime/dateTime ge '%s') and (dueDateTime/dateTime le '%s')", dueAfter, dueBefore)
-	headers := &kiota.RequestHeaders{}
-	headers.Add("ConsistencyLevel", "eventual")
-	headers.Add("Prefer", "outlook.body-content-type=\"text\"")
+	headers := newHeaders().WithDefaults().WithPreferTextContentType().WithPreferTimezone(p.timeLocation).Headers()
 	requestConfig := &users.ItemTodoListsItemTasksRequestBuilderGetRequestConfiguration{
 		QueryParameters: &users.ItemTodoListsItemTasksRequestBuilderGetQueryParameters{
 			Search: search,
