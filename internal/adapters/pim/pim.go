@@ -29,8 +29,8 @@ type Provider interface {
 	domain.Provider
 	Mount(server *httpserver.Instance)
 	LoginURL() *url.URL
-	CheckCredentials(ctx context.Context, credentials string) *CredentialInfo
-	RefreshCredentials(ctx context.Context, credentials string, refreshInterval time.Duration) string
+	CheckCredentials(ctx context.Context, sessionID, credentials string) *CredentialInfo
+	RefreshCredentials(ctx context.Context, sessionID, credentials string, refreshInterval time.Duration) string
 }
 
 type CredentialInfo struct {

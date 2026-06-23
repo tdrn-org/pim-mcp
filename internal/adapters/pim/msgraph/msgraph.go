@@ -58,8 +58,13 @@ type Provider struct {
 	runtime         Runtime
 	cfg             *config.ProviderConfig
 	timeLocation    *time.Location
-	credentialCache cache.KeyValue[string, *azidentity.OnBehalfOfCredential]
+	credentialCache cache.KeyValue[string, *credentialHolder]
 	logger          *slog.Logger
+}
+
+type credentialHolder struct {
+	UserToken       *oauth2.Token
+	GraphCredential *azidentity.OnBehalfOfCredential
 }
 
 func NewProvider(runtime Runtime, cfg *config.ProviderConfig) (*Provider, error) {
@@ -69,7 +74,7 @@ func NewProvider(runtime Runtime, cfg *config.ProviderConfig) (*Provider, error)
 		timeLocation: time.Local,
 		logger:       slog.With(slog.String("provider", Name)),
 	}
-	credentialCache, err := memory.NewKeyValue(0, credentialCacheTTL, provider.createOBOCredential)
+	credentialCache, err := memory.NewKeyValue(0, credentialCacheTTL, provider.loadSessionCredential)
 	if err != nil {
 		return nil, err
 	}
@@ -77,14 +82,39 @@ func NewProvider(runtime Runtime, cfg *config.ProviderConfig) (*Provider, error)
 	return provider, nil
 }
 
-func (p *Provider) createOBOCredential(ctx context.Context, token string) (*azidentity.OnBehalfOfCredential, error) {
-	p.logger.Info("obtaining OBO credentials...")
-	credential, err := azidentity.NewOnBehalfOfCredentialWithSecret(p.cfg.MSGraph.TenantID, p.cfg.MSGraph.ClientID, token, p.cfg.MSGraph.ClientSecret, nil)
+func (p *Provider) loadSessionCredential(ctx context.Context, sessionID string) (*credentialHolder, error) {
+	sessionLogger := p.logger.With(slog.String("sessionID", sessionID))
+	sessionLogger.Info("looking up session")
+	session, err := p.runtime.LookupSession(ctx, sessionID)
 	if err != nil {
-		p.logger.Warn("failed to create OBO credential", slog.Any("err", err))
+		sessionLogger.Warn("failed to load session", slog.Any("err", err))
 		return nil, cache.ErrNotFound
 	}
-	return credential, nil
+	token, err := unmarshalToken(session.Credentials)
+	if err != nil {
+		sessionLogger.Warn("failed to unmarshal session credentials", slog.Any("err", err))
+		return nil, cache.ErrNotFound
+	}
+	if !token.Valid() {
+		sessionLogger.Info("refreshing session token...")
+		refreshedToken, err := p.oauth2Config().TokenSource(ctx, &oauth2.Token{RefreshToken: token.RefreshToken}).Token()
+		if err != nil {
+			sessionLogger.Warn("failed to refresh session token", slog.Any("err", err))
+			return nil, cache.ErrNotFound
+		}
+		token = refreshedToken
+	}
+	sessionLogger.Info("obtaining OBO credential...")
+	credential, err := azidentity.NewOnBehalfOfCredentialWithSecret(p.cfg.MSGraph.TenantID, p.cfg.MSGraph.ClientID, token.AccessToken, p.cfg.MSGraph.ClientSecret, nil)
+	if err != nil {
+		sessionLogger.Warn("failed to create OBO credential", slog.Any("err", err))
+		return nil, cache.ErrNotFound
+	}
+	cachedCredential := &credentialHolder{
+		UserToken:       token,
+		GraphCredential: credential,
+	}
+	return cachedCredential, nil
 }
 
 func (p *Provider) requestContextWithSession(r *http.Request) context.Context {
@@ -105,21 +135,16 @@ func (p *Provider) credentialFromContext(ctx context.Context) (*azidentity.OnBeh
 	if session == nil || session.Credentials == "" {
 		return nil, domain.ErrAuthenticationRequired
 	}
-	token, err := unmarshalToken(session.Credentials)
-	if err != nil {
-		p.logger.Warn("failed to unmarshal credentials", slog.Any("err", err))
-		return nil, domain.ErrAuthenticationRequired
-	}
-	credential, err := p.credentialCache.Get(ctx, token.AccessToken)
+	cachedCredential, err := p.credentialCache.Get(ctx, session.ID)
 	if err != nil {
 		return nil, domain.ErrAuthenticationRequired
 	}
-	_, err = credential.GetToken(ctx, graphTokenRequestOptions)
+	_, err = cachedCredential.GraphCredential.GetToken(ctx, graphTokenRequestOptions)
 	if err != nil {
 		p.logger.Warn("failed to get credential token", slog.Any("err", err))
 		return nil, domain.ErrAuthenticationRequired
 	}
-	return credential, nil
+	return cachedCredential.GraphCredential, nil
 }
 
 func (p *Provider) graphClient(ctx context.Context) (*msgraphsdk.GraphServiceClient, error) {
@@ -264,23 +289,18 @@ func (p *Provider) LoginURL() *url.URL {
 	return p.runtime.BaseURL().JoinPath("/msgraph/login")
 }
 
-func (p *Provider) CheckCredentials(ctx context.Context, credentials string) *pim.CredentialInfo {
+func (p *Provider) CheckCredentials(ctx context.Context, sessionID, credentials string) *pim.CredentialInfo {
 	info := &pim.CredentialInfo{
 		Valid: false,
 	}
 	if credentials == "" {
 		return info
 	}
-	token, err := unmarshalToken(credentials)
-	if err != nil {
-		p.logger.Warn("failed to unmarshal credentials", slog.Any("err", err))
-		return info
-	}
-	credential, err := p.credentialCache.Get(ctx, token.AccessToken)
+	cachedCredential, err := p.credentialCache.Get(ctx, sessionID)
 	if err != nil {
 		return info
 	}
-	_, err = credential.GetToken(ctx, graphTokenRequestOptions)
+	_, err = cachedCredential.GraphCredential.GetToken(ctx, graphTokenRequestOptions)
 	if err != nil {
 		p.logger.Warn("failed to get credential token", slog.Any("err", err))
 		return info
@@ -289,41 +309,19 @@ func (p *Provider) CheckCredentials(ctx context.Context, credentials string) *pi
 	return info
 }
 
-func (p *Provider) RefreshCredentials(ctx context.Context, credentials string, refreshInterval time.Duration) string {
-	if credentials == "" {
+func (p *Provider) RefreshCredentials(ctx context.Context, sessionID, credentials string, refreshInterval time.Duration) string {
+	cachedCredential, err := p.credentialCache.Get(ctx, sessionID)
+	if err != nil {
+		p.logger.Warn("discarding outdated credentials", slog.Any("err", err))
+		return ""
+	}
+	refreshedCredentials, err := marshalToken(cachedCredential.UserToken)
+	if err != nil {
+		p.logger.Warn("invalid cached credentials", slog.Any("err", err))
 		return credentials
 	}
-	token, err := unmarshalToken(credentials)
-	if err != nil {
-		p.logger.Warn("discarding invalid credentials", slog.Any("err", err))
-		return ""
-	}
-	if time.Until(token.Expiry) < refreshInterval && token.RefreshToken != "" {
-		p.logger.Info("refreshing token...")
-		refreshedToken, err := p.oauth2Config().TokenSource(ctx, &oauth2.Token{RefreshToken: token.RefreshToken}).Token()
-		if err == nil {
-			token = refreshedToken
-		} else {
-			p.logger.Warn("failed to refresh token", slog.Any("err", err))
-		}
-	}
-	credential, err := p.credentialCache.Get(ctx, token.AccessToken)
-	if err != nil {
-		p.logger.Warn("discarding outdated credentials")
-		return ""
-	}
-	_, err = credential.GetToken(ctx, graphTokenRequestOptions)
-	if err != nil {
-		p.logger.Warn("discarding invalid credentials", slog.Any("err", err))
-		return ""
-	}
-	refreshedCredentials, err := marshalToken(token)
-	if err != nil {
-		p.logger.Warn("failed to marshal refreshed credentials", slog.Any("err", err))
-		return ""
-	}
 	if refreshedCredentials != credentials {
-		p.logger.Info("credentials successfully refreshed")
+		p.logger.Info("credentials refreshed")
 	}
 	return refreshedCredentials
 }
