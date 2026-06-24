@@ -24,7 +24,6 @@ import (
 	"strings"
 	"time"
 
-	kiota "github.com/microsoft/kiota-abstractions-go"
 	msgraphsdkgo "github.com/microsoftgraph/msgraph-sdk-go"
 	"github.com/microsoftgraph/msgraph-sdk-go/models"
 	"github.com/microsoftgraph/msgraph-sdk-go/users"
@@ -64,7 +63,11 @@ func (p *Provider) GetEmail(ctx context.Context, id string) (*domain.Email, erro
 	if err != nil {
 		return nil, err
 	}
-	response, err := client.Me().Messages().ByMessageId(id).Get(ctx, nil)
+	headers := newHeaders().WithDefaults().WithPreferTextContentType().Headers()
+	requestConfig := &users.ItemMessagesMessageItemRequestBuilderGetRequestConfiguration{
+		Headers: headers,
+	}
+	response, err := client.Me().Messages().ByMessageId(id).Get(ctx, requestConfig)
 	if err != nil {
 		return nil, fmt.Errorf("get email Graph API failure (cause: %w)", err)
 	}
@@ -152,8 +155,7 @@ func (p *Provider) emailFolderFilterRequestConfig(filter domain.EmailFilter) *us
 	if len(filterParts) > 0 {
 		filterParam = stringPtr(strings.Join(filterParts, " and "))
 	}
-	headers := &kiota.RequestHeaders{}
-	headers.Add("ConsistencyLevel", "eventual")
+	headers := newHeaders().WithDefaults().WithPreferTextContentType().Headers()
 	requestConfig := &users.ItemMailFoldersItemMessagesRequestBuilderGetRequestConfiguration{
 		QueryParameters: &users.ItemMailFoldersItemMessagesRequestBuilderGetQueryParameters{
 			Search: search,
