@@ -63,7 +63,11 @@ func (p *Provider) GetTask(ctx context.Context, id string) (*domain.Task, error)
 	if err != nil {
 		return nil, err
 	}
-	response, err := client.Me().Todo().Lists().ByTodoTaskListId(listID).Tasks().ByTodoTaskId(id).Get(ctx, nil)
+	headers := newHeaders().WithDefaults().WithPreferTextContentType().WithPreferTimezone(p.timeLocation).Headers()
+	requestConfig := &users.ItemTodoListsItemTasksTodoTaskItemRequestBuilderGetRequestConfiguration{
+		Headers: headers,
+	}
+	response, err := client.Me().Todo().Lists().ByTodoTaskListId(listID).Tasks().ByTodoTaskId(id).Get(ctx, requestConfig)
 	if err != nil {
 		return nil, fmt.Errorf("get task Graph API failure (cause: %w)", err)
 	}
@@ -72,7 +76,7 @@ func (p *Provider) GetTask(ctx context.Context, id string) (*domain.Task, error)
 }
 
 func (p *Provider) CreateTask(ctx context.Context, create domain.TaskCreate) (*domain.Task, error) {
-	requestBuilder := todoTaskRequestBuilder{Request: models.NewTodoTask()}
+	requestBuilder := todoTaskRequestBuilder{Request: models.NewTodoTask(), runtimeTimezone: p.runtimeTimezone}
 	request := requestBuilder.
 		Title(&create.Title).
 		Description(create.Description).
@@ -97,7 +101,7 @@ func (p *Provider) CreateTask(ctx context.Context, create domain.TaskCreate) (*d
 }
 
 func (p *Provider) UpdateTask(ctx context.Context, id string, update domain.TaskUpdate) (*domain.Task, error) {
-	requestBuilder := todoTaskRequestBuilder{Request: models.NewTodoTask()}
+	requestBuilder := todoTaskRequestBuilder{Request: models.NewTodoTask(), runtimeTimezone: p.runtimeTimezone}
 	request := requestBuilder.Title(update.Title).
 		Description(update.Description).
 		Status(update.Status).
@@ -227,7 +231,8 @@ func (p *Provider) taskFilterRequestConfig(filter domain.TaskFilter) *users.Item
 }
 
 type todoTaskRequestBuilder struct {
-	Request *models.TodoTask
+	Request         *models.TodoTask
+	runtimeTimezone string
 }
 
 func (b *todoTaskRequestBuilder) Title(title *string) *todoTaskRequestBuilder {
@@ -281,7 +286,7 @@ func (b *todoTaskRequestBuilder) DueAt(dueAt *domain.TZTime) *todoTaskRequestBui
 			b.Request.SetDueDateTime(nil)
 		} else {
 			dueDateTime := models.NewDateTimeTimeZone()
-			dateTime, timezone := marshalTZTime(*dueAt)
+			dateTime, timezone := marshalTZTime(*dueAt, b.runtimeTimezone)
 			dueDateTime.SetDateTime(dateTime)
 			dueDateTime.SetTimeZone(timezone)
 			b.Request.SetDueDateTime(dueDateTime)

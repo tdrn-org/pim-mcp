@@ -59,6 +59,7 @@ type Provider struct {
 	runtime         Runtime
 	cfg             *config.ProviderConfig
 	timeLocation    *time.Location
+	runtimeTimezone string
 	credentialCache cache.KeyValue[string, *credentialHolder]
 	logger          *slog.Logger
 }
@@ -71,17 +72,19 @@ type credentialHolder struct {
 func NewProvider(runtime Runtime, cfg *config.ProviderConfig) (*Provider, error) {
 	timezone, err := tzlocal.RuntimeTZ()
 	if err != nil {
-		return nil, fmt.Errorf("failed to get runtime timezone (cause: %w)", err)
+		slog.Warn("failed to detect runtime timezone, falling back to UTC", slog.Any("err", err))
+		timezone = "UTC"
 	}
 	timeLocation, err := time.LoadLocation(timezone)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load runtime timezone '%s' (cause: %w)", timezone, err)
 	}
 	provider := &Provider{
-		runtime:      runtime,
-		cfg:          cfg,
-		timeLocation: timeLocation,
-		logger:       slog.With(slog.String("provider", Name)),
+		runtime:         runtime,
+		cfg:             cfg,
+		timeLocation:    timeLocation,
+		runtimeTimezone: timezone,
+		logger:          slog.With(slog.String("provider", Name)),
 	}
 	credentialCache, err := memory.NewKeyValue(0, credentialCacheTTL, provider.loadSessionCredential)
 	if err != nil {

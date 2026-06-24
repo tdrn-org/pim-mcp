@@ -23,7 +23,6 @@ import (
 
 	"github.com/microsoftgraph/msgraph-sdk-go/models"
 	"github.com/tdrn-org/pim-mcp/internal/domain"
-	"github.com/thlib/go-timezone-local/tzlocal"
 )
 
 const dateTimeLayoutLong string = "2006-01-02T15:04:05.0000000"
@@ -68,14 +67,10 @@ func mapLocationToWindowsTimezone(location *time.Location) (string, bool) {
 	return windowsTimezone, exists
 }
 
-func marshalTZTime(tzTime domain.TZTime) (*string, *string) {
+func marshalTZTime(tzTime domain.TZTime, runtimeTimezone string) (*string, *string) {
 	dateTime := tzTime.DateTime.Format(dateTimeLayoutLong)
 	timezone := tzTime.Timezone
 	if timezone == "" {
-		runtimeTimezone, err := tzlocal.RuntimeTZ()
-		if err != nil {
-			runtimeTimezone = "UTC"
-		}
 		windowsTimezone, mapped := ianaTimezoneMapping[runtimeTimezone]
 		if mapped {
 			timezone = windowsTimezone

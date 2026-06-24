@@ -54,7 +54,11 @@ func (p *Provider) GetEvent(ctx context.Context, id string) (*domain.Event, erro
 	if err != nil {
 		return nil, err
 	}
-	response, err := client.Me().Events().ByEventId(id).Get(ctx, nil)
+	headers := newHeaders().WithDefaults().WithPreferTextContentType().WithPreferTimezone(p.timeLocation).Headers()
+	requestConfig := &users.ItemEventsEventItemRequestBuilderGetRequestConfiguration{
+		Headers: headers,
+	}
+	response, err := client.Me().Events().ByEventId(id).Get(ctx, requestConfig)
 	if err != nil {
 		return nil, fmt.Errorf("get event Graph API failure (cause: %w)", err)
 	}
@@ -63,7 +67,7 @@ func (p *Provider) GetEvent(ctx context.Context, id string) (*domain.Event, erro
 }
 
 func (p *Provider) CreateEvent(ctx context.Context, create domain.EventCreate) (*domain.Event, error) {
-	requestBuilder := eventRequestBuilder{Request: models.NewEvent()}
+	requestBuilder := eventRequestBuilder{Request: models.NewEvent(), runtimeTimezone: p.runtimeTimezone}
 	request := requestBuilder.
 		Title(&create.Title).
 		Description(create.Description).
@@ -164,7 +168,8 @@ func (p *Provider) eventFilterRequestConfig(filter domain.EventFilter) *users.It
 }
 
 type eventRequestBuilder struct {
-	Request *models.Event
+	Request         *models.Event
+	runtimeTimezone string
 }
 
 func (b *eventRequestBuilder) Title(title *string) *eventRequestBuilder {
@@ -190,7 +195,7 @@ func (b *eventRequestBuilder) Start(start *domain.TZTime) *eventRequestBuilder {
 			b.Request.SetStart(nil)
 		} else {
 			startDateTime := models.NewDateTimeTimeZone()
-			dateTime, timezone := marshalTZTime(*start)
+			dateTime, timezone := marshalTZTime(*start, b.runtimeTimezone)
 			startDateTime.SetDateTime(dateTime)
 			startDateTime.SetTimeZone(timezone)
 			b.Request.SetStart(startDateTime)
@@ -205,7 +210,7 @@ func (b *eventRequestBuilder) End(end *domain.TZTime) *eventRequestBuilder {
 			b.Request.SetEnd(nil)
 		} else {
 			endDateTime := models.NewDateTimeTimeZone()
-			dateTime, timezone := marshalTZTime(*end)
+			dateTime, timezone := marshalTZTime(*end, b.runtimeTimezone)
 			endDateTime.SetDateTime(dateTime)
 			endDateTime.SetTimeZone(timezone)
 			b.Request.SetEnd(endDateTime)
