@@ -147,16 +147,29 @@ func (p *Provider) credentialFromContext(ctx context.Context) (*azidentity.OnBeh
 	if session == nil || session.Credentials == "" {
 		return nil, domain.ErrAuthenticationRequired
 	}
-	cachedCredential, err := p.credentialCache.Get(ctx, session.ID)
+	cachedCredential, err := p.validatedCachedCredential(ctx, session.ID)
 	if err != nil {
-		return nil, domain.ErrAuthenticationRequired
-	}
-	_, err = cachedCredential.GraphCredential.GetToken(ctx, graphTokenRequestOptions)
-	if err != nil {
-		p.logger.Warn("failed to get credential token", slog.Any("err", err))
 		return nil, domain.ErrAuthenticationRequired
 	}
 	return cachedCredential.GraphCredential, nil
+}
+
+func (p *Provider) cachedCredential(ctx context.Context, sessionID string) (*credentialHolder, error) {
+	return p.credentialCache.Get(ctx, sessionID)
+}
+
+func (p *Provider) validatedCachedCredential(ctx context.Context, sessionID string) (*credentialHolder, error) {
+	cachedCredential, err := p.credentialCache.Get(ctx, sessionID)
+	if err != nil {
+		return nil, err
+	}
+	_, err = cachedCredential.GraphCredential.GetToken(ctx, graphTokenRequestOptions)
+	if err != nil {
+		p.logger.Warn("triggering reload of invalid credential token", slog.Any("err", err))
+		p.credentialCache.Delete(ctx, sessionID)
+		return p.credentialCache.Get(ctx, sessionID)
+	}
+	return cachedCredential, nil
 }
 
 func (p *Provider) graphClient(ctx context.Context) (*msgraphsdk.GraphServiceClient, error) {
@@ -308,13 +321,8 @@ func (p *Provider) CheckCredentials(ctx context.Context, sessionID, credentials 
 	if credentials == "" {
 		return info
 	}
-	cachedCredential, err := p.credentialCache.Get(ctx, sessionID)
+	_, err := p.validatedCachedCredential(ctx, sessionID)
 	if err != nil {
-		return info
-	}
-	_, err = cachedCredential.GraphCredential.GetToken(ctx, graphTokenRequestOptions)
-	if err != nil {
-		p.logger.Warn("failed to get credential token", slog.Any("err", err))
 		return info
 	}
 	info.Valid = true
@@ -322,7 +330,7 @@ func (p *Provider) CheckCredentials(ctx context.Context, sessionID, credentials 
 }
 
 func (p *Provider) RefreshCredentials(ctx context.Context, sessionID, credentials string, refreshInterval time.Duration) string {
-	cachedCredential, err := p.credentialCache.Get(ctx, sessionID)
+	cachedCredential, err := p.cachedCredential(ctx, sessionID)
 	if err != nil {
 		p.logger.Warn("discarding outdated credentials", slog.Any("err", err))
 		return ""
