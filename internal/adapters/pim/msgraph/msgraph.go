@@ -108,6 +108,10 @@ func (p *Provider) loadSessionCredential(ctx context.Context, sessionID string) 
 		return nil, cache.ErrNotFound
 	}
 	if !token.Valid() {
+		if token.RefreshToken == "" {
+			sessionLogger.Warn("no refresh token; unable to refresh session token")
+			return nil, cache.ErrNotFound
+		}
 		sessionLogger.Info("refreshing session token...")
 		refreshedToken, err := p.oauth2Config().TokenSource(ctx, &oauth2.Token{RefreshToken: token.RefreshToken}).Token()
 		if err != nil {
@@ -332,8 +336,8 @@ func (p *Provider) CheckCredentials(ctx context.Context, sessionID, credentials 
 func (p *Provider) RefreshCredentials(ctx context.Context, sessionID, credentials string, refreshInterval time.Duration) string {
 	cachedCredential, err := p.cachedCredential(ctx, sessionID)
 	if err != nil {
-		p.logger.Warn("discarding outdated credentials", slog.Any("err", err))
-		return ""
+		p.logger.Warn("unable to get cached credentials", slog.Any("err", err))
+		return credentials
 	}
 	refreshedCredentials, err := marshalToken(cachedCredential.UserToken)
 	if err != nil {
