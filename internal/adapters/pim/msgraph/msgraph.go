@@ -60,6 +60,7 @@ type Provider struct {
 	cfg             *config.ProviderConfig
 	timeLocation    *time.Location
 	runtimeTimezone string
+	stateCookie     *httpserver.CookieHandler
 	credentialCache cache.KeyValue[string, *credentialHolder]
 	logger          *slog.Logger
 }
@@ -84,7 +85,14 @@ func NewProvider(runtime Runtime, cfg *config.ProviderConfig) (*Provider, error)
 		cfg:             cfg,
 		timeLocation:    timeLocation,
 		runtimeTimezone: timezone,
-		logger:          slog.With(slog.String("provider", Name)),
+		stateCookie: &httpserver.CookieHandler{
+			Name:     Name,
+			Path:     "/",
+			Secure:   true,
+			SameSite: http.SameSiteLaxMode,
+			MaxAge:   300,
+		},
+		logger: slog.With(slog.String("provider", Name)),
 	}
 	credentialCache, err := memory.NewKeyValue(0, credentialCacheTTL, provider.loadSessionCredential)
 	if err != nil {
@@ -169,7 +177,7 @@ func (p *Provider) validatedCachedCredential(ctx context.Context, sessionID stri
 	}
 	_, err = cachedCredential.GraphCredential.GetToken(ctx, graphTokenRequestOptions)
 	if err != nil {
-		p.logger.Warn("triggering reload of invalid credential token", slog.Any("err", err))
+		p.logger.Info("triggering reload of expired credential token", slog.Any("err", err))
 		p.credentialCache.Delete(ctx, sessionID)
 		return p.credentialCache.Get(ctx, sessionID)
 	}
@@ -201,6 +209,7 @@ func (p *Provider) graphClient(ctx context.Context) (*msgraphsdk.GraphServiceCli
 func (p *Provider) handleLogin(w http.ResponseWriter, r *http.Request) {
 	p.logger.Info("initiating OAuth2 authentication flow")
 	state := uuid.NewString()
+	p.stateCookie.Set(w, state, false)
 	redirect := p.oauth2Config().AuthCodeURL(state)
 	http.Redirect(w, r, redirect, http.StatusFound)
 }
@@ -208,12 +217,17 @@ func (p *Provider) handleLogin(w http.ResponseWriter, r *http.Request) {
 func (p *Provider) handleCallback(w http.ResponseWriter, r *http.Request) {
 	p.logger.Info("completing OAuth2 authentication flow")
 	code := r.URL.Query().Get("code")
-	//TODO: Verify state
-	//state := r.URL.Query().Get("state")
 	if code == "" {
 		http.Error(w, "missing code", http.StatusBadRequest)
 		return
 	}
+	state := r.URL.Query().Get("state")
+	requestState, _ := p.stateCookie.Get(r)
+	if state == "" || state != requestState {
+		http.Error(w, "missing or invalid state", http.StatusBadRequest)
+		return
+	}
+	p.stateCookie.Delete(w)
 	token, err := p.oauth2Config().Exchange(r.Context(), code)
 	if err != nil {
 		http.Error(w, "token exchange failed: "+err.Error(), http.StatusInternalServerError)
