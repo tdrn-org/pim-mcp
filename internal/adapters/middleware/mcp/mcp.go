@@ -53,9 +53,11 @@ func NewHandler(runtime Runtime, provider domain.Provider) http.Handler {
 		return func(ctx context.Context, method string, req mcp.Request) (mcp.Result, error) {
 			session := auth.SessionFromContext(ctx)
 			if session != nil {
-				runtime.Logger().Info("mcp request with valid session",
+				runtime.Logger().Debug("mcp request with valid user session",
 					slog.String("method", method),
 					slog.String("session_id", session.ID))
+			} else {
+				runtime.Logger().Warn("mcp request without user session")
 			}
 			// Allow unauthenticated access for backward compatibility
 			return next(ctx, method, req)
