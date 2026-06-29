@@ -51,16 +51,18 @@ func NewHandler(runtime Runtime, provider domain.Provider) http.Handler {
 	// Receiving middleware: validate API key and inject session into context
 	server.AddReceivingMiddleware(func(next mcp.MethodHandler) mcp.MethodHandler {
 		return func(ctx context.Context, method string, req mcp.Request) (mcp.Result, error) {
+			methodLogger := runtime.Logger().With(slog.String("method", method))
 			session := auth.SessionFromContext(ctx)
 			if session != nil {
-				runtime.Logger().Debug("mcp request with valid user session",
-					slog.String("method", method),
-					slog.String("session_id", session.ID))
+				methodLogger.Debug("mcp request with valid user session", slog.String("session_id", session.ID))
 			} else {
-				runtime.Logger().Warn("mcp request without user session")
+				methodLogger.Warn("mcp request without user session")
 			}
-			// Allow unauthenticated access for backward compatibility
-			return next(ctx, method, req)
+			result, err := next(ctx, method, req)
+			if err != nil {
+				methodLogger.Warn("mcp tool call failure", slog.Any("err", err))
+			}
+			return result, err
 		}
 	})
 
