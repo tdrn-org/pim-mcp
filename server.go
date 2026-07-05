@@ -32,11 +32,14 @@ import (
 	"github.com/tdrn-org/go-httpserver"
 	"github.com/tdrn-org/go-tlsconf/tlsclient"
 	"github.com/tdrn-org/pim-mcp/config"
+	"github.com/tdrn-org/pim-mcp/internal/adapters/dms"
+	paperlessngx "github.com/tdrn-org/pim-mcp/internal/adapters/dms/paperlessngx"
 	"github.com/tdrn-org/pim-mcp/internal/adapters/middleware/mcp"
 	"github.com/tdrn-org/pim-mcp/internal/adapters/middleware/rest"
 	"github.com/tdrn-org/pim-mcp/internal/adapters/pim"
 	"github.com/tdrn-org/pim-mcp/internal/adapters/pim/demo"
 	"github.com/tdrn-org/pim-mcp/internal/adapters/pim/msgraph"
+	"github.com/tdrn-org/pim-mcp/internal/domain"
 	"github.com/tdrn-org/pim-mcp/internal/session"
 	"github.com/tdrn-org/pim-mcp/internal/session/model"
 	"github.com/tdrn-org/pim-mcp/internal/web"
@@ -51,6 +54,7 @@ type Server struct {
 	baseURL             *url.URL
 	sessionCookie       *httpserver.CookieHandler
 	provider            pim.Provider
+	dmsProvider         dms.Provider
 	jobTicker           *time.Ticker
 	jobTickerShutdown   chan any
 	jobTickerShutdownWG sync.WaitGroup
@@ -219,7 +223,25 @@ func (s *Server) startMCPServer(ctx context.Context, cfg *config.Config) error {
 	}
 	s.provider = provider
 	s.provider.Mount(s.httpServer)
-	s.httpServer.Handle(mcp.Path, mcp.NewHandler(runtime, s.provider))
+
+	// Start DMS provider if configured
+	var dmsDomainProvider domain.Provider
+	switch cfg.DMS.Adapter {
+	case config.DMSAdapterPaperlessNGX:
+		dmsProv, dmsErr := paperlessngx.NewProvider(runtime, &cfg.DMS)
+		if dmsErr != nil {
+			return dmsErr
+		}
+		s.dmsProvider = dmsProv
+		dmsProv.Mount(s.httpServer)
+		dmsDomainProvider = dmsProv
+	case config.DMSAdapterNone:
+		// No DMS configured — dmsDomainProvider stays nil
+	default:
+		return fmt.Errorf("unrecognized DMS adapter '%s'", cfg.DMS.Adapter)
+	}
+
+	s.httpServer.Handle(mcp.Path, mcp.NewHandler(runtime, s.provider, dmsDomainProvider))
 	return nil
 }
 

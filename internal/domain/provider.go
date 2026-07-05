@@ -32,6 +32,7 @@ type ProviderCapabilities struct {
 	Calendar   bool
 	Tasks      bool
 	Contacts   bool
+	Documents  bool
 	AccessMode AccessMode
 }
 
@@ -41,6 +42,14 @@ func AllProviderCapabilities(mode AccessMode) ProviderCapabilities {
 		Calendar:   true,
 		Tasks:      true,
 		Contacts:   true,
+		Documents:  false,
+		AccessMode: mode,
+	}
+}
+
+func AllDMSCapabilities(mode AccessMode) ProviderCapabilities {
+	return ProviderCapabilities{
+		Documents:  true,
 		AccessMode: mode,
 	}
 }

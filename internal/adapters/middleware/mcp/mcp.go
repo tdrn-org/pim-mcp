@@ -37,7 +37,7 @@ type Runtime interface {
 	LookupSessionByAPIKey(ctx context.Context, apiKey string) (*model.Session, error)
 }
 
-func NewHandler(runtime Runtime, provider domain.Provider) http.Handler {
+func NewHandler(runtime Runtime, provider domain.Provider, dmsProvider domain.Provider) http.Handler {
 	impl := &mcp.Implementation{
 		Name:       buildinfo.Cmd(),
 		Version:    buildinfo.Version(),
@@ -78,6 +78,14 @@ func NewHandler(runtime Runtime, provider domain.Provider) http.Handler {
 	}
 	if capabilities.Contacts {
 		addContactTools(server, provider.(domain.ContactProvider))
+	}
+
+	// Register DMS tools if a DMS provider is configured
+	if dmsProvider != nil {
+		dmsCapabilities := dmsProvider.Capabilities()
+		if dmsCapabilities.Documents {
+			addDocumentTools(server, dmsCapabilities, dmsProvider.(domain.DocumentProvider))
+		}
 	}
 
 	getServerFromRequest := func(r *http.Request) *mcp.Server {
