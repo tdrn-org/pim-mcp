@@ -206,13 +206,13 @@ func (s *Server) startMCPServer(ctx context.Context, cfg *config.Config) error {
 	runtime := &serverRuntime{server: s}
 	var provider pim.Provider
 	var err error
-	switch cfg.Provider.Adapter {
-	case config.ProviderAdapterDemo:
+	switch cfg.PIM.Adapter {
+	case config.PIMAdapterDemo:
 		provider = demo.NewProvider(runtime)
-	case config.ProviderAdapterMSGraph:
-		provider, err = msgraph.NewProvider(runtime, &cfg.Provider)
+	case config.PIMAdapterMSGraph:
+		provider, err = msgraph.NewProvider(runtime, &cfg.PIM)
 	default:
-		return fmt.Errorf("unrecognized provider adapter '%s'", cfg.Provider.Adapter)
+		return fmt.Errorf("unrecognized provider adapter '%s'", cfg.PIM.Adapter)
 	}
 	if err != nil {
 		return err

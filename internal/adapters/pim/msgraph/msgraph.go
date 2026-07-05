@@ -57,7 +57,7 @@ const credentialCacheTTL time.Duration = time.Hour
 
 type Provider struct {
 	runtime         Runtime
-	cfg             *config.ProviderConfig
+	cfg             *config.PIMConfig
 	timeLocation    *time.Location
 	runtimeTimezone string
 	stateCookie     *httpserver.CookieHandler
@@ -70,7 +70,7 @@ type credentialHolder struct {
 	GraphCredential *azidentity.OnBehalfOfCredential
 }
 
-func NewProvider(runtime Runtime, cfg *config.ProviderConfig) (*Provider, error) {
+func NewProvider(runtime Runtime, cfg *config.PIMConfig) (*Provider, error) {
 	timezone, err := tzlocal.RuntimeTZ()
 	if err != nil {
 		slog.Warn("failed to detect runtime timezone, falling back to UTC", slog.Any("err", err))

@@ -27,10 +27,11 @@ import (
 )
 
 type Config struct {
-	Logging  LoggingConfig  `toml:"logging"`
-	Server   ServerConfig   `toml:"server"`
-	Store    StoreConfig    `toml:"store"`
-	Provider ProviderConfig `toml:"provider"`
+	Logging LoggingConfig `toml:"logging"`
+	Server  ServerConfig  `toml:"server"`
+	Store   StoreConfig   `toml:"store"`
+	PIM     PIMConfig     `toml:"pim"`
+	DMS     DMSConfig     `toml:"dms"`
 }
 
 //go:embed defaults.toml

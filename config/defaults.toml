@@ -30,12 +30,19 @@ type = "memory"
 [store.sqlite]
 file = "./pim-mcp.db"
 
-[provider]
+[pim]
 adapter = "demo"
 access_mode = "read_only"
 
-[provider.msgraph]
+[pim.msgraph]
 client_id = ""
 client_secret = ""
 tenant_id = ""
 sensitivity_limit = 0
+
+[dms]
+adapter = "none"
+
+[dms.paperlessngx]
+api_url = ""
+api_key = ""
