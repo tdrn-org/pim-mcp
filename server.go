@@ -53,7 +53,7 @@ type Server struct {
 	httpServer          *httpserver.Instance
 	baseURL             *url.URL
 	sessionCookie       *httpserver.CookieHandler
-	provider            pim.Provider
+	pimProvider         pim.Provider
 	dmsProvider         dms.Provider
 	jobTicker           *time.Ticker
 	jobTickerShutdown   chan any
@@ -208,21 +208,21 @@ func (s *Server) closeHttpServer() error {
 
 func (s *Server) startMCPServer(ctx context.Context, cfg *config.Config) error {
 	runtime := &serverRuntime{server: s}
-	var provider pim.Provider
+	var pimProvider pim.Provider
 	var err error
 	switch cfg.PIM.Adapter {
 	case config.PIMAdapterDemo:
-		provider = demo.NewProvider(runtime)
+		pimProvider = demo.NewProvider(runtime)
 	case config.PIMAdapterMSGraph:
-		provider, err = msgraph.NewProvider(runtime, &cfg.PIM)
+		pimProvider, err = msgraph.NewProvider(runtime, &cfg.PIM)
 	default:
 		return fmt.Errorf("unrecognized provider adapter '%s'", cfg.PIM.Adapter)
 	}
 	if err != nil {
 		return err
 	}
-	s.provider = provider
-	s.provider.Mount(s.httpServer)
+	s.pimProvider = pimProvider
+	s.pimProvider.Mount(s.httpServer)
 
 	// Start DMS provider if configured
 	var dmsDomainProvider domain.Provider
@@ -241,7 +241,7 @@ func (s *Server) startMCPServer(ctx context.Context, cfg *config.Config) error {
 		return fmt.Errorf("unrecognized DMS adapter '%s'", cfg.DMS.Adapter)
 	}
 
-	s.httpServer.Handle(mcp.Path, mcp.NewHandler(runtime, s.provider, dmsDomainProvider))
+	s.httpServer.Handle(mcp.Path, mcp.NewHandler(runtime, s.pimProvider, dmsDomainProvider))
 	return nil
 }
 
@@ -294,7 +294,7 @@ func (s *Server) runJobs() {
 	}
 	for _, session := range sessions {
 		if session.Credentials != "" {
-			credentials := s.provider.RefreshCredentials(ctx, session.ID, session.Credentials, serverJobTickerSchedule)
+			credentials := s.pimProvider.RefreshCredentials(ctx, session.ID, session.Credentials, serverJobTickerSchedule)
 			if session.Credentials != credentials {
 				session.Credentials = credentials
 				err = session.Update(ctx)
@@ -311,7 +311,7 @@ type serverRuntime struct {
 }
 
 func (runtime *serverRuntime) Provider() pim.Provider {
-	return runtime.server.provider
+	return runtime.server.pimProvider
 }
 
 func (runtime *serverRuntime) BaseURL() *url.URL {
