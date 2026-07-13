@@ -168,8 +168,8 @@ github.com/tdrn-org/go-paperless-ngx v0.0.2 h1:Fv3qBIDv+zZJrvdIzFkszNP0/Ql7vvYgB
 github.com/tdrn-org/go-paperless-ngx v0.0.2/go.mod h1:GYKayFAh48fP/VNC3XyLSWLevUarG6+57pzMIYnIngg=
 github.com/tdrn-org/go-tlsconf v0.0.10 h1:dbBiA9sZ4Y/9zGdMeVtXyDyd/vLoOh4diebkk5BZatk=
 github.com/tdrn-org/go-tlsconf v0.0.10/go.mod h1:xSklUyH615Z55/4nrevuuqgmN7goVAy2XgfDMwhLMcE=
-github.com/thlib/go-timezone-local v0.0.7 h1:fX8zd3aJydqLlTs/TrROrIIdztzsdFV23OzOQx31jII=
-github.com/thlib/go-timezone-local v0.0.7/go.mod h1:/Tnicc6m/lsJE0irFMA0LfIwTBo4QP7A8IfyIv4zZKI=
+github.com/thlib/go-timezone-local v0.0.8 h1:wPh1JtBHBqAKmYjHD4j6GbQMGGbOOOnB6YRMQUTzYAY=
+github.com/thlib/go-timezone-local v0.0.8/go.mod h1:/Tnicc6m/lsJE0irFMA0LfIwTBo4QP7A8IfyIv4zZKI=
 github.com/urfave/cli/v2 v2.27.7 h1:bH59vdhbjLv3LAvIu6gd0usJHgoTTPhCFib8qqOwXYU=
 github.com/urfave/cli/v2 v2.27.7/go.mod h1:CyNAG/xg+iAOg0N4MPGZqVmv2rCoP267496AOXUZjA4=
 github.com/xrash/smetrics v0.0.0-20250705151800-55b8f293f342 h1:FnBeRrxr7OU4VvAzt5X7s6266i6cSVkkFPS0TuXWbIg=
