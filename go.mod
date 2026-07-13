@@ -88,7 +88,7 @@ require (
 	github.com/tdrn-org/go-database v0.1.0
 	github.com/tdrn-org/go-diff v0.1.3
 	github.com/tdrn-org/go-httpserver v0.1.1
-	github.com/tdrn-org/go-log v0.5.6
+	github.com/tdrn-org/go-log v0.5.7
 	github.com/thlib/go-timezone-local v0.0.7
 	github.com/yosida95/uritemplate/v3 v3.0.2 // indirect
 	golang.org/x/oauth2 v0.36.0
