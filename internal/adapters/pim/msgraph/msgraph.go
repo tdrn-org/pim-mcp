@@ -53,7 +53,7 @@ type Runtime interface {
 	UpdateSessionCredentials(ctx context.Context, id string, credentials string) error
 }
 
-const credentialCacheTTL time.Duration = time.Hour
+const credentialCacheTTL time.Duration = 50 * time.Minute
 
 type Provider struct {
 	runtime         Runtime
@@ -94,7 +94,7 @@ func NewProvider(runtime Runtime, cfg *config.PIMConfig) (*Provider, error) {
 		},
 		logger: slog.With(slog.String("provider", Name)),
 	}
-	credentialCache, err := memory.NewKeyValue(0, credentialCacheTTL, provider.loadSessionCredential)
+	credentialCache, err := memory.NewKeyValue(0, -credentialCacheTTL, provider.loadSessionCredential)
 	if err != nil {
 		return nil, err
 	}
