@@ -23,7 +23,7 @@ const docTemplate = `{
     "paths": {
         "/api/v1/login": {
             "post": {
-                "description": "Initiate PIM provider login for the current user. Optionally provide an api_key for session recovery.",
+                "description": "Initiate PIM provider login. Without body: creates a new session and redirects to OAuth2. With api_key: recovers existing session.",
                 "consumes": [
                     "application/json"
                 ],
@@ -94,7 +94,7 @@ const docTemplate = `{
         },
         "/api/v1/session": {
             "get": {
-                "description": "Get the session for the current user",
+                "description": "Get the session for the current user. Returns 401 if no valid session exists.",
                 "produces": [
                     "application/json"
                 ],
@@ -104,6 +104,12 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/rest.SessionInfo"
+                        }
+                    },
+                    "401": {
+                        "description": "no session",
+                        "schema": {
+                            "type": "string"
                         }
                     },
                     "500": {
@@ -165,6 +171,9 @@ const docTemplate = `{
             "properties": {
                 "api_key": {
                     "type": "string"
+                },
+                "reconnect": {
+                    "type": "boolean"
                 }
             }
         }

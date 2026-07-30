@@ -18,6 +18,8 @@ definitions:
     properties:
       api_key:
         type: string
+      reconnect:
+        type: boolean
     type: object
 host: localhost:9123
 info:
@@ -34,8 +36,8 @@ paths:
     post:
       consumes:
       - application/json
-      description: Initiate PIM provider login for the current user. Optionally provide
-        an api_key for session recovery.
+      description: 'Initiate PIM provider login. Without body: creates a new session
+        and redirects to OAuth2. With api_key: recovers existing session.'
       parameters:
       - description: optional api_key for session recovery
         in: body
@@ -93,7 +95,8 @@ paths:
             type: string
       summary: Delete the user session
     get:
-      description: Get the session for the current user
+      description: Get the session for the current user. Returns 401 if no valid session
+        exists.
       produces:
       - application/json
       responses:
@@ -101,6 +104,10 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/rest.SessionInfo'
+        "401":
+          description: no session
+          schema:
+            type: string
         "500":
           description: server error
           schema:
