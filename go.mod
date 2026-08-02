@@ -88,7 +88,7 @@ require (
 	github.com/tdrn-org/go-cache v0.0.5
 	github.com/tdrn-org/go-database v0.1.2
 	github.com/tdrn-org/go-diff v0.1.4
-	github.com/tdrn-org/go-httpserver v0.1.1
+	github.com/tdrn-org/go-httpserver v0.1.2
 	github.com/tdrn-org/go-log v0.5.8
 	github.com/thlib/go-timezone-local v0.0.8
 	github.com/yosida95/uritemplate/v3 v3.0.2 // indirect
