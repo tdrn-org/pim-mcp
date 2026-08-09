@@ -1,6 +1,6 @@
 module github.com/tdrn-org/pim-mcp
 
-go 1.26.3
+go 1.26.5
 
 require (
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.22.0
@@ -9,9 +9,9 @@ require (
 	github.com/modelcontextprotocol/go-sdk v1.7.0
 	github.com/oapi-codegen/runtime v1.6.0
 	github.com/swaggo/swag v1.16.6
-	github.com/tdrn-org/go-conf v0.0.7
+	github.com/tdrn-org/go-conf v0.0.8
 	github.com/tdrn-org/go-paperless-ngx v0.0.2
-	github.com/tdrn-org/go-tlsconf v0.0.11
+	github.com/tdrn-org/go-tlsconf v0.0.12
 )
 
 require (
@@ -53,9 +53,9 @@ require (
 	github.com/urfave/cli/v2 v2.27.7 // indirect
 	github.com/xrash/smetrics v0.0.0-20250705151800-55b8f293f342 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
-	go.opentelemetry.io/otel v1.44.0 // indirect
-	go.opentelemetry.io/otel/metric v1.44.0 // indirect
-	go.opentelemetry.io/otel/trace v1.44.0 // indirect
+	go.opentelemetry.io/otel v1.45.0 // indirect
+	go.opentelemetry.io/otel/metric v1.45.0 // indirect
+	go.opentelemetry.io/otel/trace v1.45.0 // indirect
 	go.yaml.in/yaml/v2 v2.4.4 // indirect
 	go.yaml.in/yaml/v3 v3.0.5 // indirect
 	golang.org/x/crypto v0.54.0 // indirect
@@ -66,10 +66,10 @@ require (
 	golang.org/x/time v0.15.0 // indirect
 	golang.org/x/tools v0.48.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	modernc.org/libc v1.74.4 // indirect
+	modernc.org/libc v1.75.3 // indirect
 	modernc.org/mathutil v1.7.1 // indirect
-	modernc.org/memory v1.11.0 // indirect
-	modernc.org/sqlite v1.55.0 // indirect
+	modernc.org/memory v1.12.0 // indirect
+	modernc.org/sqlite v1.56.0 // indirect
 	sigs.k8s.io/yaml v1.6.0 // indirect
 )
 
@@ -80,16 +80,16 @@ require (
 	github.com/google/jsonschema-go v0.4.3 // indirect
 	github.com/google/uuid v1.6.0
 	github.com/maypok86/otter/v2 v2.3.0 // indirect
-	github.com/microsoftgraph/msgraph-sdk-go v1.100.0
+	github.com/microsoftgraph/msgraph-sdk-go v1.101.0
 	github.com/rs/cors v1.11.1
 	github.com/segmentio/asm v1.2.1 // indirect
 	github.com/segmentio/encoding v0.5.4 // indirect
 	github.com/stretchr/testify v1.11.1
 	github.com/tdrn-org/go-cache v0.0.5
-	github.com/tdrn-org/go-database v0.1.2
+	github.com/tdrn-org/go-database v0.1.3
 	github.com/tdrn-org/go-diff v0.1.4
-	github.com/tdrn-org/go-httpserver v0.1.1
-	github.com/tdrn-org/go-log v0.5.8
+	github.com/tdrn-org/go-httpserver v0.1.3
+	github.com/tdrn-org/go-log v0.6.1
 	github.com/thlib/go-timezone-local v0.0.8
 	github.com/yosida95/uritemplate/v3 v3.0.2 // indirect
 	golang.org/x/oauth2 v0.36.0
