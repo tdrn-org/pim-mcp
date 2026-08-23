@@ -7,7 +7,7 @@ require (
 	github.com/microsoft/kiota-abstractions-go v1.9.4
 	github.com/microsoft/kiota-authentication-azure-go v1.3.1
 	github.com/modelcontextprotocol/go-sdk v1.7.0
-	github.com/oapi-codegen/runtime v1.6.0
+	github.com/oapi-codegen/runtime v1.7.0
 	github.com/swaggo/swag v1.16.6
 	github.com/tdrn-org/go-conf v0.0.8
 	github.com/tdrn-org/go-paperless-ngx v0.0.2
