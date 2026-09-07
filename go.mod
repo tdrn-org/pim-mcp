@@ -4,7 +4,7 @@ go 1.26.5
 
 require (
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.23.0
-	github.com/microsoft/kiota-abstractions-go v1.9.4
+	github.com/microsoft/kiota-abstractions-go v1.10.1
 	github.com/microsoft/kiota-authentication-azure-go v1.3.1
 	github.com/modelcontextprotocol/go-sdk v1.7.0
 	github.com/oapi-codegen/runtime v1.7.0
