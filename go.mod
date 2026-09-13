@@ -89,7 +89,7 @@ require (
 	github.com/tdrn-org/go-log v0.6.1
 	github.com/thlib/go-timezone-local v0.0.8
 	github.com/yosida95/uritemplate/v3 v3.0.2 // indirect
-	golang.org/x/oauth2 v0.36.0
+	golang.org/x/oauth2 v0.37.0
 	golang.org/x/sys v0.47.0 // indirect
 )
 
