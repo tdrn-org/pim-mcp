@@ -9,7 +9,7 @@ require (
 	github.com/modelcontextprotocol/go-sdk v1.8.0
 	github.com/oapi-codegen/runtime v1.7.0
 	github.com/swaggo/swag v1.16.6
-	github.com/tdrn-org/go-conf v0.0.8
+	github.com/tdrn-org/go-conf v0.0.9
 	github.com/tdrn-org/go-paperless-ngx v0.0.2
 	github.com/tdrn-org/go-tlsconf v0.0.12
 )
