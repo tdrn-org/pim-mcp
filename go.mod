@@ -11,7 +11,7 @@ require (
 	github.com/swaggo/swag v1.16.6
 	github.com/tdrn-org/go-conf v0.0.9
 	github.com/tdrn-org/go-paperless-ngx v0.0.2
-	github.com/tdrn-org/go-tlsconf v0.0.12
+	github.com/tdrn-org/go-tlsconf v0.0.13
 )
 
 require (
