@@ -84,7 +84,7 @@ require (
 	github.com/stretchr/testify v1.12.1
 	github.com/tdrn-org/go-cache v0.1.2
 	github.com/tdrn-org/go-database v0.1.3
-	github.com/tdrn-org/go-diff v0.1.4
+	github.com/tdrn-org/go-diff v0.1.5
 	github.com/tdrn-org/go-httpserver v0.1.3
 	github.com/tdrn-org/go-log v0.6.2
 	github.com/thlib/go-timezone-local v0.0.8
