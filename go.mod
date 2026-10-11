@@ -18,7 +18,7 @@ require (
 	github.com/swaggo/swag v1.16.6
 	github.com/tdrn-org/go-cache v0.1.5
 	github.com/tdrn-org/go-conf v0.0.10
-	github.com/tdrn-org/go-database v0.1.6
+	github.com/tdrn-org/go-database v0.1.7
 	github.com/tdrn-org/go-diff v0.1.6
 	github.com/tdrn-org/go-httpserver v0.1.6
 	github.com/tdrn-org/go-log v0.6.4
