@@ -22,7 +22,7 @@ require (
 	github.com/tdrn-org/go-diff v0.1.6
 	github.com/tdrn-org/go-httpserver v0.1.6
 	github.com/tdrn-org/go-log v0.6.4
-	github.com/tdrn-org/go-paperless-ngx v0.0.4
+	github.com/tdrn-org/go-paperless-ngx v0.0.5
 	github.com/tdrn-org/go-tlsconf v0.0.15
 	github.com/thlib/go-timezone-local v0.0.8
 	golang.org/x/oauth2 v0.37.0
@@ -83,7 +83,7 @@ require (
 	golang.org/x/sys v0.48.0 // indirect
 	golang.org/x/text v0.42.0 // indirect
 	golang.org/x/time v0.16.0 // indirect
-	golang.org/x/tools v0.50.0 // indirect
+	golang.org/x/tools v0.51.0 // indirect
 	modernc.org/libc v1.77.1 // indirect
 	modernc.org/mathutil v1.7.1 // indirect
 	modernc.org/memory v1.12.1 // indirect
