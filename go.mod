@@ -4,7 +4,7 @@ go 1.27.0
 
 require (
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.23.3
-	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.14.1
+	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.15.0
 	github.com/BurntSushi/toml v1.6.0
 	github.com/alecthomas/kong v1.16.1
 	github.com/google/uuid v1.6.0
