@@ -24,7 +24,7 @@ require (
 	github.com/tdrn-org/go-log v0.6.4
 	github.com/tdrn-org/go-paperless-ngx v0.0.5
 	github.com/tdrn-org/go-tlsconf v0.0.15
-	github.com/thlib/go-timezone-local v0.0.8
+	github.com/thlib/go-timezone-local v0.0.9
 	golang.org/x/oauth2 v0.37.0
 )
 
