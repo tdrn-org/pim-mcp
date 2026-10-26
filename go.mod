@@ -8,7 +8,7 @@ require (
 	github.com/BurntSushi/toml v1.6.0
 	github.com/alecthomas/kong v1.16.1
 	github.com/google/uuid v1.6.0
-	github.com/microsoft/kiota-abstractions-go v1.11.1
+	github.com/microsoft/kiota-abstractions-go v1.11.4
 	github.com/microsoft/kiota-authentication-azure-go v1.3.1
 	github.com/microsoftgraph/msgraph-sdk-go v1.104.0
 	github.com/modelcontextprotocol/go-sdk v1.8.0
