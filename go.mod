@@ -22,7 +22,7 @@ require (
 	github.com/tdrn-org/go-diff v0.1.6
 	github.com/tdrn-org/go-httpserver v0.1.6
 	github.com/tdrn-org/go-log v0.6.4
-	github.com/tdrn-org/go-paperless-ngx v0.0.7
+	github.com/tdrn-org/go-paperless-ngx v0.0.8
 	github.com/tdrn-org/go-tlsconf v0.0.15
 	github.com/thlib/go-timezone-local v0.0.9
 	golang.org/x/oauth2 v0.37.0
@@ -36,7 +36,7 @@ require (
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.7 // indirect
 	github.com/dustin/go-humanize v1.1.0 // indirect
-	github.com/go-chi/chi/v5 v5.4.0 // indirect
+	github.com/go-chi/chi/v5 v5.5.0 // indirect
 	github.com/go-logr/logr v1.4.4 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-openapi/jsonpointer v1.0.2 // indirect
