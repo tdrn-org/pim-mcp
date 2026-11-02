@@ -16,7 +16,7 @@ require (
 	github.com/rs/cors v1.11.1
 	github.com/stretchr/testify v1.12.1
 	github.com/swaggo/swag v1.16.6
-	github.com/tdrn-org/go-cache v0.1.6
+	github.com/tdrn-org/go-cache v0.1.9
 	github.com/tdrn-org/go-conf v0.0.10
 	github.com/tdrn-org/go-database v0.1.9
 	github.com/tdrn-org/go-diff v0.1.6
@@ -53,7 +53,7 @@ require (
 	github.com/google/jsonschema-go v0.4.3 // indirect
 	github.com/kylelemons/godebug v1.1.0 // indirect
 	github.com/mattn/go-isatty v0.0.24 // indirect
-	github.com/maypok86/otter/v2 v2.3.0 // indirect
+	github.com/maypok86/otter/v2 v2.4.0 // indirect
 	github.com/microsoft/kiota-http-go v1.5.6 // indirect
 	github.com/microsoft/kiota-serialization-form-go v1.1.3 // indirect
 	github.com/microsoft/kiota-serialization-json-go v1.1.4 // indirect
