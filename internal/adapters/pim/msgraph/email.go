@@ -38,8 +38,18 @@ func (p *Provider) SearchEmails(ctx context.Context, filter domain.EmailFilter) 
 	}
 	var response models.MessageCollectionResponseable
 	if filter.Folder != nil && *filter.Folder != "" {
-		requestConfig := p.emailFolderFilterRequestConfig(filter)
-		response, err = client.Me().MailFolders().ByMailFolderId(*filter.Folder).Messages().Get(ctx, requestConfig)
+		requestConfig0 := p.folderFilterRequestConfig(filter)
+		var response0 models.MailFolderCollectionResponseable
+		response0, err = client.Me().MailFolders().Get(ctx, requestConfig0)
+		if err == nil {
+			folderId := *filter.Folder
+			value := response0.GetValue()
+			if len(value) == 1 {
+				folderId = *value[0].GetId()
+			}
+			requestConfig := p.emailFolderFilterRequestConfig(filter)
+			response, err = client.Me().MailFolders().ByMailFolderId(folderId).Messages().Get(ctx, requestConfig)
+		}
 	} else {
 		requestConfig := p.emailFilterRequestConfig(filter)
 		response, err = client.Me().Messages().Get(ctx, requestConfig)
@@ -139,6 +149,15 @@ func (p *Provider) addressesFromResponse(models []models.Recipientable) []domain
 func (p *Provider) addressFromResponse(model models.Recipientable) domain.NamedEmailAddress {
 	emailAddress := model.GetEmailAddress()
 	return domain.NewNamedEmailAddress(ptrString(emailAddress.GetAddress()), ptrString(emailAddress.GetName()))
+}
+
+func (p *Provider) folderFilterRequestConfig(filter domain.EmailFilter) *users.ItemMailFoldersRequestBuilderGetRequestConfiguration {
+	return &users.ItemMailFoldersRequestBuilderGetRequestConfiguration{
+		QueryParameters: &users.ItemMailFoldersRequestBuilderGetQueryParameters{
+			Filter: stringPtr(fmt.Sprintf("displayName eq '%s'", *filter.Folder)),
+			Select: []string{"id", "displayName"},
+		},
+	}
 }
 
 func (p *Provider) emailFolderFilterRequestConfig(filter domain.EmailFilter) *users.ItemMailFoldersItemMessagesRequestBuilderGetRequestConfiguration {
