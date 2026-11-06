@@ -36,29 +36,22 @@ func (p *Provider) SearchEmails(ctx context.Context, filter domain.EmailFilter) 
 	if err != nil {
 		return nil, err
 	}
-	var response models.MessageCollectionResponseable
+	responseItems := make([]models.Messageable, 0)
 	if filter.Folder != nil && *filter.Folder != "" {
-		requestConfig0 := p.folderFilterRequestConfig(filter)
-		var response0 models.MailFolderCollectionResponseable
-		response0, err = client.Me().MailFolders().Get(ctx, requestConfig0)
-		if err == nil {
-			folderId := *filter.Folder
-			value := response0.GetValue()
-			if len(value) == 1 {
-				folderId = *value[0].GetId()
-			}
-			requestConfig := p.emailFolderFilterRequestConfig(filter)
-			response, err = client.Me().MailFolders().ByMailFolderId(folderId).Messages().Get(ctx, requestConfig)
-		}
+		responseItems, err = p.searchEmailsByFolder(ctx, client, filter)
 	} else {
 		requestConfig := p.emailFilterRequestConfig(filter)
+		var response models.MessageCollectionResponseable
 		response, err = client.Me().Messages().Get(ctx, requestConfig)
+		if err == nil {
+			responseItems = append(responseItems, response.GetValue()...)
+		}
 	}
 	if err != nil {
 		return nil, fmt.Errorf("search emails Graph API failure (cause: %w)", err)
 	}
-	emails := make([]*domain.Email, 0)
-	for _, responseItem := range response.GetValue() {
+	emails := make([]*domain.Email, 0, len(responseItems))
+	for _, responseItem := range responseItems {
 		email := p.emailFromResponse(ctx, client, responseItem)
 		if !email.Empty() {
 			emails = append(emails, email)
@@ -66,6 +59,26 @@ func (p *Provider) SearchEmails(ctx context.Context, filter domain.EmailFilter) 
 	}
 	slices.SortFunc(emails, application.EmailSortFunc)
 	return emails, nil
+}
+
+func (p *Provider) searchEmailsByFolder(ctx context.Context, client *msgraphsdkgo.GraphServiceClient, filter domain.EmailFilter) ([]models.Messageable, error) {
+	responseItems := make([]models.Messageable, 0)
+	folderRequestConfig := p.folderFilterRequestConfig(filter)
+	var folderResponse models.MailFolderCollectionResponseable
+	folderResponse, err := client.Me().MailFolders().Get(ctx, folderRequestConfig)
+	if err != nil {
+		return nil, err
+	}
+	for _, folderResponseItem := range folderResponse.GetValue() {
+		requestConfig := p.emailFolderFilterRequestConfig(filter)
+		var response models.MessageCollectionResponseable
+		response, err = client.Me().MailFolders().ByMailFolderId(*folderResponseItem.GetId()).Messages().Get(ctx, requestConfig)
+		if err != nil {
+			return nil, err
+		}
+		responseItems = append(responseItems, response.GetValue()...)
+	}
+	return responseItems, nil
 }
 
 func (p *Provider) GetEmail(ctx context.Context, id string) (*domain.Email, error) {
