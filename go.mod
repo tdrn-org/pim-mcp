@@ -8,7 +8,7 @@ require (
 	github.com/BurntSushi/toml v1.6.0
 	github.com/alecthomas/kong v1.17.0
 	github.com/google/uuid v1.6.0
-	github.com/microsoft/kiota-abstractions-go v1.12.0
+	github.com/microsoft/kiota-abstractions-go v1.12.1
 	github.com/microsoft/kiota-authentication-azure-go v1.3.1
 	github.com/microsoftgraph/msgraph-sdk-go v1.105.0
 	github.com/modelcontextprotocol/go-sdk v1.8.0
@@ -58,7 +58,7 @@ require (
 	github.com/microsoft/kiota-serialization-form-go v1.1.6 // indirect
 	github.com/microsoft/kiota-serialization-json-go v1.1.5 // indirect
 	github.com/microsoft/kiota-serialization-multipart-go v1.1.5 // indirect
-	github.com/microsoft/kiota-serialization-text-go v1.1.6 // indirect
+	github.com/microsoft/kiota-serialization-text-go v1.1.7 // indirect
 	github.com/microsoftgraph/msgraph-sdk-go-core v1.4.1 // indirect
 	github.com/ncruces/go-strftime v1.1.0 // indirect
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c // indirect
@@ -67,7 +67,7 @@ require (
 	github.com/segmentio/asm v1.2.1 // indirect
 	github.com/segmentio/encoding v0.5.4 // indirect
 	github.com/std-uritemplate/std-uritemplate/go/v2 v2.0.13 // indirect
-	github.com/tdrn-org/go-trace v0.0.1 // indirect
+	github.com/tdrn-org/go-trace v0.0.2 // indirect
 	github.com/urfave/cli/v2 v2.27.7 // indirect
 	github.com/xrash/smetrics v0.0.0-20261013231157-39c47d93efba // indirect
 	github.com/yosida95/uritemplate/v3 v3.0.2 // indirect
