@@ -1,7 +1,7 @@
 <script lang="ts">
-		import { getSession, deleteSession, loginOAuth2, reconnectOAuth2 } from '$lib/api';
-	import type { SessionInfo } from '$lib/types';
-	import ApiKeyModal from '$lib/ApiKeyModal.svelte';
+		import { getSession, deleteSession, loginOAuth2, reconnectOAuth2 } from '#lib/api';
+	import type { SessionInfo } from '#lib/types';
+	import ApiKeyModal from '#lib/ApiKeyModal.svelte';
 
 	let session = $state<SessionInfo | null>(null);
 	let error = $state<string | null>(null);
