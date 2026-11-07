@@ -61,24 +61,13 @@ func (p *Provider) SearchEmails(ctx context.Context, filter domain.EmailFilter) 
 	return emails, nil
 }
 
+// searchEmailsByFolder searches all mail folders matching the filter's folder name.
+//
+// A folder name is not unique: a mailbox may hold several folders with the same
+// display name (e.g. "Archiv" at the root and as a sub-folder of the inbox), and
+// all of them are searched. See searchEmailsInMatchingFolders for details.
 func (p *Provider) searchEmailsByFolder(ctx context.Context, client *msgraphsdkgo.GraphServiceClient, filter domain.EmailFilter) ([]models.Messageable, error) {
-	responseItems := make([]models.Messageable, 0)
-	folderRequestConfig := p.folderFilterRequestConfig(filter)
-	var folderResponse models.MailFolderCollectionResponseable
-	folderResponse, err := client.Me().MailFolders().Get(ctx, folderRequestConfig)
-	if err != nil {
-		return nil, err
-	}
-	for _, folderResponseItem := range folderResponse.GetValue() {
-		requestConfig := p.emailFolderFilterRequestConfig(filter)
-		var response models.MessageCollectionResponseable
-		response, err = client.Me().MailFolders().ByMailFolderId(*folderResponseItem.GetId()).Messages().Get(ctx, requestConfig)
-		if err != nil {
-			return nil, err
-		}
-		responseItems = append(responseItems, response.GetValue()...)
-	}
-	return responseItems, nil
+	return searchEmailsInMatchingFolders(ctx, &graphMailFolderClient{graph: client}, *filter.Folder, filter, p.logger)
 }
 
 func (p *Provider) GetEmail(ctx context.Context, id string) (*domain.Email, error) {
@@ -162,42 +151,6 @@ func (p *Provider) addressesFromResponse(models []models.Recipientable) []domain
 func (p *Provider) addressFromResponse(model models.Recipientable) domain.NamedEmailAddress {
 	emailAddress := model.GetEmailAddress()
 	return domain.NewNamedEmailAddress(ptrString(emailAddress.GetAddress()), ptrString(emailAddress.GetName()))
-}
-
-func (p *Provider) folderFilterRequestConfig(filter domain.EmailFilter) *users.ItemMailFoldersRequestBuilderGetRequestConfiguration {
-	return &users.ItemMailFoldersRequestBuilderGetRequestConfiguration{
-		QueryParameters: &users.ItemMailFoldersRequestBuilderGetQueryParameters{
-			Filter: stringPtr(fmt.Sprintf("displayName eq '%s'", *filter.Folder)),
-			Select: []string{"id", "displayName"},
-		},
-	}
-}
-
-func (p *Provider) emailFolderFilterRequestConfig(filter domain.EmailFilter) *users.ItemMailFoldersItemMessagesRequestBuilderGetRequestConfiguration {
-	search, limit := standardFilterPtr(filter.StandardFilter)
-	filterParts := make([]string, 0)
-	if filter.UnreadOnly {
-		filterParts = append(filterParts, "(isRead eq false)")
-	}
-	if filter.Since != nil && !filter.Since.IsZero() {
-		formattedDate := filter.Since.UTC().Format(time.RFC3339)
-		filterParts = append(filterParts, fmt.Sprintf("(receivedDateTime ge %s)", formattedDate))
-	}
-	var filterParam *string
-	if len(filterParts) > 0 {
-		filterParam = stringPtr(strings.Join(filterParts, " and "))
-	}
-	headers := newHeaders().WithDefaults().WithPreferTextContentType().Headers()
-	requestConfig := &users.ItemMailFoldersItemMessagesRequestBuilderGetRequestConfiguration{
-		QueryParameters: &users.ItemMailFoldersItemMessagesRequestBuilderGetQueryParameters{
-			Search: search,
-			Filter: filterParam,
-			Top:    limit,
-			Count:  boolPtr(true),
-		},
-		Headers: headers,
-	}
-	return requestConfig
 }
 
 func (p *Provider) emailFilterRequestConfig(filter domain.EmailFilter) *users.ItemMessagesRequestBuilderGetRequestConfiguration {
