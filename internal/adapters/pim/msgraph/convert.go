@@ -166,6 +166,13 @@ func ptrBool(p *bool, v bool) bool {
 	return *p
 }
 
+func ptrInt32(p *int32) int32 {
+	if p == nil {
+		return 0
+	}
+	return *p
+}
+
 func ptrTime(p *time.Time) time.Time {
 	if p == nil {
 		return time.Time{}
