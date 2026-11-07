@@ -166,8 +166,8 @@ github.com/tdrn-org/go-httpserver v0.1.7 h1:h0FsOPQN3VnJ9PbAXAsR92Xx5CCEqjeLFnTA
 github.com/tdrn-org/go-httpserver v0.1.7/go.mod h1:g0ePyPycL3RfUIyD5us9oR+McSHVG1qh8GDAbwcXJRU=
 github.com/tdrn-org/go-log v0.6.4 h1:AvpO/nizfq5O+wq6rJNocXG4HsIvsUAhgIG/MOg5LGI=
 github.com/tdrn-org/go-log v0.6.4/go.mod h1:BlnqMMnt1DwQjJZuxMy0qSffPttdv6ubcod6mgGBvzA=
-github.com/tdrn-org/go-paperless-ngx v0.0.9 h1:PRXmIO2RDFtc5MnUaUlZFrbh0IG210dto6Iy5BDU8G4=
-github.com/tdrn-org/go-paperless-ngx v0.0.9/go.mod h1:IqzTa3UpxQgKXobDvg3B2MgOdK2A5iqzLQZEQwyx2GM=
+github.com/tdrn-org/go-paperless-ngx v0.1.0 h1:TCGicjcFl2jwTxCh0b3OMcAbbaCu8USYGp0WIp8OiLw=
+github.com/tdrn-org/go-paperless-ngx v0.1.0/go.mod h1:prlz4+K7RbCf71hkXt6NJgKJ6aU784WNzk0CcO76B18=
 github.com/tdrn-org/go-tlsconf v0.0.15 h1:VscbpWYkvVY8fJf3ncGgFRRAmRQWTL1Uxr5JP9zRz2U=
 github.com/tdrn-org/go-tlsconf v0.0.15/go.mod h1:1iL49P7ov0OfD08T4rgL3BJ7Zw3UZRNK45PcWa26SgE=
 github.com/tdrn-org/go-trace v0.0.2 h1:Kt8/SKARPZxBQgB6C1QkDWT1R9+pvDE9+oQ+1v9xbsc=
