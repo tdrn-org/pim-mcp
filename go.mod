@@ -25,7 +25,7 @@ require (
 	github.com/tdrn-org/go-paperless-ngx v0.1.0
 	github.com/tdrn-org/go-tlsconf v0.0.15
 	github.com/thlib/go-timezone-local v0.0.9
-	golang.org/x/oauth2 v0.37.0
+	golang.org/x/oauth2 v0.38.0
 )
 
 require (
