@@ -25,7 +25,7 @@ import (
 )
 
 func TestStartStopServer(t *testing.T) {
-	cfg, err := config.Load("testdata/pim-mcp.toml", true)
+	cfg, err := config.Load("testdata/pim-mcp.toml")
 	require.NoError(t, err)
 	server, err := pimmcp.StartServer(t.Context(), cfg)
 	require.NoError(t, err)

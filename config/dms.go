@@ -17,9 +17,7 @@
 package config
 
 import (
-	"fmt"
-	"log/slog"
-
+	"github.com/tdrn-org/go-config-toml"
 	"github.com/tdrn-org/pim-mcp/internal/domain"
 )
 
@@ -30,8 +28,8 @@ type DMSConfig struct {
 }
 
 type PaperlessNGXConfig struct {
-	APIURL URLSpec `toml:"api_url"`
-	APIKey string  `toml:"api_key"`
+	APIURL config.URLSpec `toml:"api_url"`
+	APIKey string         `toml:"api_key"`
 }
 
 type DMSAdapter string
@@ -41,35 +39,30 @@ const (
 	DMSAdapterPaperlessNGX DMSAdapter = "paperlessngx"
 )
 
-var knownDMSAdapters map[string]DMSAdapter = map[string]DMSAdapter{
+var dmsAdapterMarshalMap map[DMSAdapter]string = map[DMSAdapter]string{
+	DMSAdapterNone:         string(DMSAdapterNone),
+	DMSAdapterPaperlessNGX: string(DMSAdapterPaperlessNGX),
+}
+
+var dmsAdapterUnmarshalMap map[string]DMSAdapter = map[string]DMSAdapter{
 	string(DMSAdapterNone):         DMSAdapterNone,
 	string(DMSAdapterPaperlessNGX): DMSAdapterPaperlessNGX,
 }
 
-func (p *DMSAdapter) Value() string {
-	for value, adapter := range knownDMSAdapters {
-		if *p == adapter {
-			return value
-		}
-	}
-	slog.Warn("unexpected DMS adapter", slog.Any("p", *p))
-	return ""
+func (a DMSAdapter) String() string {
+	return dmsAdapterMarshalMap[a]
 }
 
-func (p *DMSAdapter) MarshalTOML() ([]byte, error) {
-	return []byte(`"` + p.Value() + `"`), nil
+func (a DMSAdapter) MarshalText() ([]byte, error) {
+	return config.MarshalEnum(a, dmsAdapterMarshalMap)
 }
 
-func (p *DMSAdapter) UnmarshalTOML(value any) error {
-	adapterString, ok := value.(string)
-	if !ok {
-		return fmt.Errorf("unexpected DMS adapter type %v", value)
+func (a *DMSAdapter) UnmarshalText(text []byte) error {
+	adapter, err := config.UnmarshalEnum(dmsAdapterUnmarshalMap, text)
+	if err != nil {
+		return err
 	}
-	adapter, ok := knownDMSAdapters[adapterString]
-	if !ok {
-		return fmt.Errorf("unknown DMS adapter: '%s'", adapterString)
-	}
-	*p = adapter
+	*a = adapter
 	return nil
 }
 
@@ -80,33 +73,28 @@ const (
 	DMSAccessModeRW DMSAccessMode = DMSAccessMode(domain.ReadWrite)
 )
 
-var knownDMSAccessModes map[string]DMSAccessMode = map[string]DMSAccessMode{
+var dmsAccessMarshalMap map[DMSAccessMode]string = map[DMSAccessMode]string{
+	DMSAccessModeRO: string(DMSAccessModeRO),
+	DMSAccessModeRW: string(DMSAccessModeRW),
+}
+
+var dmsAccessUnmarshalMap map[string]DMSAccessMode = map[string]DMSAccessMode{
 	string(DMSAccessModeRO): DMSAccessModeRO,
 	string(DMSAccessModeRW): DMSAccessModeRW,
 }
 
-func (m *DMSAccessMode) Value() string {
-	for value, mode := range knownDMSAccessModes {
-		if *m == mode {
-			return value
-		}
-	}
-	slog.Warn("unexpected DMS access mode", slog.Any("m", *m))
-	return ""
+func (m DMSAccessMode) String() string {
+	return dmsAccessMarshalMap[m]
 }
 
-func (m *DMSAccessMode) MarshalTOML() ([]byte, error) {
-	return []byte(`"` + m.Value() + `"`), nil
+func (m DMSAccessMode) MarshalText() ([]byte, error) {
+	return config.MarshalEnum(m, dmsAccessMarshalMap)
 }
 
-func (m *DMSAccessMode) UnmarshalTOML(value any) error {
-	modeString, ok := value.(string)
-	if !ok {
-		return fmt.Errorf("unexpected DMS access mode type %v", value)
-	}
-	mode, ok := knownDMSAccessModes[modeString]
-	if !ok {
-		return fmt.Errorf("unknown DMS access mode: '%s'", modeString)
+func (m *DMSAccessMode) UnmarshalText(text []byte) error {
+	mode, err := config.UnmarshalEnum(dmsAccessUnmarshalMap, text)
+	if err != nil {
+		return err
 	}
 	*m = mode
 	return nil

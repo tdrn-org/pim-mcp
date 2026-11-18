@@ -5,7 +5,6 @@ go 1.27.0
 require (
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.24.0
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.15.0
-	github.com/BurntSushi/toml v1.6.0
 	github.com/alecthomas/kong v1.17.0
 	github.com/google/uuid v1.6.0
 	github.com/microsoft/kiota-abstractions-go v1.12.1
@@ -18,6 +17,7 @@ require (
 	github.com/swaggo/swag v1.16.6
 	github.com/tdrn-org/go-cache v0.1.9
 	github.com/tdrn-org/go-conf v0.0.10
+	github.com/tdrn-org/go-config-toml v0.1.1
 	github.com/tdrn-org/go-database v0.1.12
 	github.com/tdrn-org/go-diff v0.1.6
 	github.com/tdrn-org/go-httpserver v0.1.7
@@ -61,6 +61,7 @@ require (
 	github.com/microsoft/kiota-serialization-text-go v1.1.7 // indirect
 	github.com/microsoftgraph/msgraph-sdk-go-core v1.4.1 // indirect
 	github.com/ncruces/go-strftime v1.1.0 // indirect
+	github.com/pelletier/go-toml/v2 v2.4.3 // indirect
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
