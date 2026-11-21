@@ -7,11 +7,11 @@ require (
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.15.0
 	github.com/alecthomas/kong v1.17.0
 	github.com/google/uuid v1.6.0
-	github.com/microsoft/kiota-abstractions-go v1.12.1
+	github.com/microsoft/kiota-abstractions-go v1.12.2
 	github.com/microsoft/kiota-authentication-azure-go v1.3.1
-	github.com/microsoftgraph/msgraph-sdk-go v1.106.0
+	github.com/microsoftgraph/msgraph-sdk-go v1.107.0
 	github.com/modelcontextprotocol/go-sdk v1.8.0
-	github.com/oapi-codegen/runtime v1.9.0
+	github.com/oapi-codegen/runtime v1.9.1
 	github.com/rs/cors v1.11.1
 	github.com/stretchr/testify v1.12.1
 	github.com/swaggo/swag v1.16.6
@@ -24,7 +24,7 @@ require (
 	github.com/tdrn-org/go-log v0.6.4
 	github.com/tdrn-org/go-paperless-ngx v0.1.2
 	github.com/tdrn-org/go-tlsconf v0.0.15
-	github.com/thlib/go-timezone-local v0.0.9
+	github.com/thlib/go-timezone-local v0.1.0
 	golang.org/x/oauth2 v0.38.0
 )
 
@@ -39,7 +39,7 @@ require (
 	github.com/go-chi/chi/v5 v5.5.0 // indirect
 	github.com/go-logr/logr v1.4.4 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
-	github.com/go-openapi/jsonpointer v1.0.2 // indirect
+	github.com/go-openapi/jsonpointer v1.0.3 // indirect
 	github.com/go-openapi/jsonreference v1.0.3 // indirect
 	github.com/go-openapi/spec v1.0.1 // indirect
 	github.com/go-openapi/swag/conv v0.29.2 // indirect
@@ -54,11 +54,11 @@ require (
 	github.com/kylelemons/godebug v1.1.0 // indirect
 	github.com/mattn/go-isatty v0.0.24 // indirect
 	github.com/maypok86/otter/v2 v2.4.0 // indirect
-	github.com/microsoft/kiota-http-go v1.6.1 // indirect
-	github.com/microsoft/kiota-serialization-form-go v1.1.7 // indirect
+	github.com/microsoft/kiota-http-go v1.7.0 // indirect
+	github.com/microsoft/kiota-serialization-form-go v1.1.8 // indirect
 	github.com/microsoft/kiota-serialization-json-go v1.1.5 // indirect
-	github.com/microsoft/kiota-serialization-multipart-go v1.1.6 // indirect
-	github.com/microsoft/kiota-serialization-text-go v1.1.7 // indirect
+	github.com/microsoft/kiota-serialization-multipart-go v1.1.7 // indirect
+	github.com/microsoft/kiota-serialization-text-go v1.1.8 // indirect
 	github.com/microsoftgraph/msgraph-sdk-go-core v1.4.1 // indirect
 	github.com/ncruces/go-strftime v1.1.0 // indirect
 	github.com/pelletier/go-toml/v2 v2.4.3 // indirect
@@ -72,7 +72,7 @@ require (
 	github.com/urfave/cli/v2 v2.27.7 // indirect
 	github.com/xrash/smetrics v0.0.0-20261013231157-39c47d93efba // indirect
 	github.com/yosida95/uritemplate/v3 v3.0.2 // indirect
-	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
+	go.opentelemetry.io/auto/sdk v1.2.2 // indirect
 	go.opentelemetry.io/otel v1.47.0 // indirect
 	go.opentelemetry.io/otel/log v1.47.0 // indirect
 	go.opentelemetry.io/otel/metric v1.47.0 // indirect
@@ -81,13 +81,13 @@ require (
 	go.yaml.in/yaml/v3 v3.0.6 // indirect
 	golang.org/x/crypto v0.59.0 // indirect
 	golang.org/x/mod v0.43.0 // indirect
-	golang.org/x/net v0.62.0 // indirect
+	golang.org/x/net v0.63.0 // indirect
 	golang.org/x/sync v0.25.0 // indirect
 	golang.org/x/sys v0.50.0 // indirect
 	golang.org/x/text v0.44.0 // indirect
 	golang.org/x/time v0.16.0 // indirect
-	golang.org/x/tools v0.52.0 // indirect
-	modernc.org/libc v1.81.2 // indirect
+	golang.org/x/tools v0.53.0 // indirect
+	modernc.org/libc v1.82.6 // indirect
 	modernc.org/mathutil v1.7.1 // indirect
 	modernc.org/memory v1.13.0 // indirect
 	modernc.org/sqlite v1.62.0 // indirect
